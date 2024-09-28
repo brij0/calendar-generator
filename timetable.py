@@ -54,24 +54,37 @@ def llm_chained_template(content):
 
 prompt_extract = PromptTemplate.from_template(
     """
-        Extract all important dates, times, associated activities, and the weightage of components from this document. Focus on identifying the following:
+        Extract structured information for adding to a calendar from this document. Focus only on the following details for each entry:
 
-        Lecture schedules (days, start and end times, location).
-        Laboratory schedules (days, start and end times, location).
-        Important deadlines for assignments, labs, or reports, including their weightage.
-        Exam dates (midterms and final exams), with times, locations, and weightage.
-        Any other key academic events such as study breaks or review sessions.
-        For each entry, provide:
+        Event Type (e.g., Lecture, Lab, Midterm, Final Exam, Deadline).
+        Start Date and End Date (for events spanning multiple days, provide both).
+        Time (start and end time of the event).
+        Days (for events spanning multiple days)
+        Location (if applicable).
+        Brief Description of the event (e.g., course name or type of exam).
+        Weightage (if applicable, for exams, labs, or assignments).
+        For each event, provide the above details in a concise, structured format with no additional information or explanation."
 
-        The date,
-        The time,
-        A brief description of the event,
-        And, if applicable, the weightage of the component (e.g., assignments, labs, exams)."
-        Example Input:
-        "Lectures: MonWedFri 12:30pm-1:20pm in ROZH*102 (9/5 to 12/13)"
-        "Midterm Exam: Oct 19, 12:00 PM - 2:00 PM (25%)"
-        "Final Exam: Dec 2, Mon 11:30am-1:30pm (35%)"
-        "Laboratories '25%' of total grade, assignments 15%"
+        Example Output Format:
+        Event Type: Lecture
+
+        Date: September 5 - December 13
+        Days: Tuesday and Thursday
+        Time: 1:30 pm - 2:20 pm
+        Location: RICH*2520
+        Description: ENGG*3640 lectures
+        Event Type: Midterm Exam
+
+        Date: October 9
+        Days: Wednesday
+        Time: 1:30 pm - 2:20 pm
+        Location: N/A
+        Description: Midterm exam
+        Weightage: 10%
+
+        Try to use some logic before responding N/A, I am not saying always write something but sometimes days and time are predictable 
+        like if there is an "In class quiz" itself is self explanatory.
+        NO PREAMBLE
     """)
 
 def add_class_to_calendar(subject, start_time, end_time, location=None, recurrence=None, body=None):
@@ -104,7 +117,7 @@ def add_class_to_calendar(subject, start_time, end_time, location=None, recurren
     print(f"Class '{subject}' added to calendar.")
 
 if __name__ == "__main__":
-    pdf_content = get_content_from_pdf("w24.hist1250.outline.final.pdf")
+    pdf_content = get_content_from_pdf("Course Outline_ENGG3700_F24.pdf")
     llm_chained_template_response = llm_chained_template(pdf_content)
     print(llm_chained_template_response)
 
