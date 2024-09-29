@@ -6,13 +6,16 @@ from langchain_core.prompts import PromptTemplate # type: ignore
 import pdfplumber # type: ignore
 import fitz # type: ignore
 import sys
+import os
 sys.stdout.reconfigure(encoding='utf-8')
+from dotenv import load_dotenv
 
 
 def schedule(content):
+    load_dotenv()
     llm = ChatGroq(
         temperature = 0,
-        groq_api_key = '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',
+        groq_api_key = os.getenv('GROQ_API_KEY'),
         model_name = "llama-3.1-70b-versatile"
     )
     response = llm.invoke(content)
@@ -54,36 +57,16 @@ def llm_chained_template(content):
 
 prompt_extract = PromptTemplate.from_template(
     """
-        Extract structured information for adding to a calendar from this document. Focus only on the following details for each entry:
+       Extract structured information from this document for adding events to a calendar. Format the output for each event as a Python dictionary with the following fields:
 
-        Event Type (e.g., Lecture, Lab, Midterm, Final Exam, Deadline).
-        Start Date and End Date (for events spanning multiple days, provide both).
-        Time (start and end time of the event).
-        Days (for events spanning multiple days)
-        Location (if applicable).
-        Brief Description of the event (e.g., course name or type of exam).
-        Weightage (if applicable, for exams, labs, or assignments).
-        For each event, provide the above details in a concise, structured format with no additional information or explanation."
-
-        Example Output Format:
-        Event Type: Lecture
-
-        Date: September 5 - December 13
-        Days: Tuesday and Thursday
-        Time: 1:30 pm - 2:20 pm
-        Location: RICH*2520
-        Description: ENGG*3640 lectures
-        Event Type: Midterm Exam
-
-        Date: October 9
-        Days: Wednesday
-        Time: 1:30 pm - 2:20 pm
-        Location: N/A
-        Description: Midterm exam
-        Weightage: 10%
-
-        Try to use some logic before responding N/A, I am not saying always write something but sometimes days and time are predictable 
-        like if there is an "In class quiz" itself is self explanatory.
+event_type: The type of the event (e.g., 'Lecture', 'Lab', 'Midterm Exam', 'Final Exam', 'Deadline').
+is_recurring: Provide 1 if the event is recurring, otherwise 0 if it’s a one-time event.
+date: For one-time events, provide the exact date. For recurring events, provide the start date and end date separately as start_date and end_date.
+time: Provide the start and end time of the event.
+location: The location of the event. If the event is a quiz or in-class activity, use the same location as the lecture unless specified otherwise.
+description: A brief description of the event (e.g., course name or type of exam).
+weightage: For events like exams, labs, or assignments, include the weightage (if applicable). If not applicable, return None.
+For recurring events, also provide the recurrence pattern (e.g., 'Every Monday'). Format the response as a Python dictionary for each event without unnecessary details or explanations.
         NO PREAMBLE
     """)
 
@@ -120,5 +103,6 @@ if __name__ == "__main__":
     pdf_content = get_content_from_pdf("Course Outline_ENGG3700_F24.pdf")
     llm_chained_template_response = llm_chained_template(pdf_content)
     print(llm_chained_template_response)
+    print(type(llm_chained_template_response))
 
 
