@@ -119,3 +119,8 @@ Special thanks to the following resources and individuals for their help and sup
 ## Tests
 
 There are no specific tests for this project
+
+
+## License
+
+[![License](https://img.shields.io/static/v1?label=License&message=MIT&color=blue&style=plastic&logo=appveyor)](https://opensource.org/licenses/MIT)
