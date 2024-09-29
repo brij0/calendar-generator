@@ -3,12 +3,14 @@ import win32com.client
 from datetime import datetime, timedelta
 from langchain_groq import ChatGroq # type: ignore
 from langchain_core.prompts import PromptTemplate # type: ignore
-import pdfplumber # type: ignore
 import fitz # type: ignore
 import sys
 import os
-sys.stdout.reconfigure(encoding='utf-8')
+
 from dotenv import load_dotenv
+import re
+from datetime import datetime
+
 
 
 def schedule(content):
@@ -57,52 +59,133 @@ def llm_chained_template(content):
 
 prompt_extract = PromptTemplate.from_template(
     """
-       Extract structured information from this document for adding events to a calendar. Format the output for each event as a Python dictionary with the following fields:
+        Extract all important academic events from this course outline and provide the details for each event in the exact format given below. Do not omit any relevant information. For any missing information (e.g., 'TBA' for location), return 'TBA' or 'N/A' as applicable.
 
-event_type: The type of the event (e.g., 'Lecture', 'Lab', 'Midterm Exam', 'Final Exam', 'Deadline').
-is_recurring: Provide 1 if the event is recurring, otherwise 0 if it’s a one-time event.
-date: For one-time events, provide the exact date. For recurring events, provide the start date and end date separately as start_date and end_date.
-time: Provide the start and end time of the event.
-location: The location of the event. If the event is a quiz or in-class activity, use the same location as the lecture unless specified otherwise.
-description: A brief description of the event (e.g., course name or type of exam).
-weightage: For events like exams, labs, or assignments, include the weightage (if applicable). If not applicable, return None.
-For recurring events, also provide the recurrence pattern (e.g., 'Every Monday'). Format the response as a Python dictionary for each event without unnecessary details or explanations.
+        For each event, provide the following details:
+
+        Event Type: (e.g., Lecture, Lab, Midterm Exam, Final Exam, Assignment, Lab Report).
+        Start Date: For recurring events (like lectures, labs), provide the start date.
+        End Date: For recurring events (like lectures, labs), provide the end date.
+        Date: For one-time events (like exams, assignments), provide the exact date.
+        Days: For recurring events (e.g., lectures, labs), specify the days of the week (e.g., Monday, Wednesday, Friday). For one-time events, leave this as 'N/A'.
+        Time: Provide the start and end time of the event. If the time is not provided, use 'TBA' or 'N/A'.
+        Location: Provide the location of the event. If the location is not provided, use 'TBA'.
+        Description: Provide a brief description of the event (e.g., course name, lab number, or exam type).
+        Weightage: For events that are graded (e.g., assignments, exams, lab reports), provide the weightage. If not applicable, use 'Null'.
+
+        "event_type": "Lecture",
+        "start_date": "2024-09-05",
+        "end_date": "2024-12-13",
+        "days": ["Monday", "Wednesday", "Friday"],
+        "time": "12:30 pm - 1:20 pm",
+        "location": "ROZH*102",
+        "description": "ENGG*3450 lectures",
+        "weightage": "Null"
+
+
+        "event_type": "Midterm Exam",
+        "date": "2024-10-19",
+        "time": "12:00 pm - 2:00 pm",
+        "location": "TBA",
+        "description": "Midterm exam",
+        "weightage": "25%"
+
+         "event_type": "Assignment 1",
+        "date": "2024-10-07",
+        "time": "12:30 pm - 1:20 pm",
+        "location": "N/A",
+        "description": "Assignment 1",
+        "weightage": "7.5%"
+
+
         NO PREAMBLE
     """)
+import re
+from datetime import datetime
 
-def add_class_to_calendar(subject, start_time, end_time, location=None, recurrence=None, body=None):
-    # Connect to Outlook
-    outlook = win32com.client.Dispatch("Outlook.Application")
-    calendar = outlook.GetNamespace("MAPI").GetDefaultFolder(9)  # 9 refers to the calendar
+def parse_event(event_str):
+    event = {}
 
-    # Create a new appointment item
-    appointment = calendar.Items.Add(1)  # 1 refers to a regular appointment
+    # Extract Event Type
+    event_type_match = re.search(r"Event Type: (.+)", event_str)
+    if event_type_match:
+        event['event_type'] = event_type_match.group(1)
 
-    # Set the details of the appointment
-    appointment.Subject = subject
-    appointment.Start = start_time
-    appointment.End = end_time
-    if location:
-        appointment.Location = location
-    if body:
-        appointment.Body = body
+    # Extract Date (handles both date ranges and single dates, ignoring 'TBA')
+    date_match = re.search(r"Date: (.+)", event_str)
+    if date_match:
+        date_range = date_match.group(1).split(' - ')
+        if len(date_range) > 1:
+            if date_range[0] != 'TBA':
+                event['start_date'] = date_range[0]  # Keep as a string or format as needed
+            else:
+                event['start_date'] = 'TBA'
+            
+            if date_range[1] != 'TBA':
+                event['end_date'] = date_range[1]  # Keep as a string or format as needed
+            else:
+                event['end_date'] = 'TBA'
+        else:
+            if date_range[0] != 'TBA':
+                event['date'] = date_range[0]  # Keep as a string or format as needed
+            else:
+                event['date'] = 'TBA'
 
-    # Set recurrence pattern if required (for weekly classes)
-    if recurrence:
-        recurrence_pattern = appointment.GetRecurrencePattern()
-        recurrence_pattern.RecurrenceType = recurrence["type"]
-        recurrence_pattern.Interval = recurrence.get("interval", 1)  # Every X weeks
-        recurrence_pattern.PatternStartDate = recurrence["start_date"]
-        recurrence_pattern.PatternEndDate = recurrence["end_date"]
+    # Extract Days
+    days_match = re.search(r"Days: (.+)", event_str)
+    if days_match:
+        event['days'] = days_match.group(1).split(', ')
 
-    # Save the appointment
-    appointment.Save()
-    print(f"Class '{subject}' added to calendar.")
+    # Extract Time
+    time_match = re.search(r"Time: (.+)", event_str)
+    if time_match:
+        event['time'] = time_match.group(1)
+
+    # Extract Location
+    location_match = re.search(r"Location: (.+)", event_str)
+    if location_match:
+        event['location'] = location_match.group(1)
+
+    # Extract Description
+    description_match = re.search(r"Description: (.+)", event_str)
+    if description_match:
+        event['description'] = description_match.group(1)
+
+    # Extract Weightage
+    weightage_match = re.search(r"Weightage: (.+)", event_str)
+    if weightage_match:
+        event['weightage'] = weightage_match.group(1)
+    
+    return event
+
+
+def parse_all_events(events_str):
+    # Split the input string by two newlines to separate events
+    event_blocks = events_str.strip().split('\n\n')
+    
+    # Initialize a list to store all parsed events
+    events = []
+    
+    # Loop through each event block and parse it
+    for event_block in event_blocks:
+        event = parse_event(event_block)
+        events.append(event)
+    
+    return events
 
 if __name__ == "__main__":
-    pdf_content = get_content_from_pdf("Course Outline_ENGG3700_F24.pdf")
+    # Extract the content from the PDF
+    pdf_content = get_content_from_pdf("engg-4450-01.pdf")
+    
+    # Send the extracted content to the LLM template to process and return structured event data
     llm_chained_template_response = llm_chained_template(pdf_content)
-    print(llm_chained_template_response)
-    print(type(llm_chained_template_response))
+    print(llm_chained_template_response)  # Print the LLM response for debugging
+    
+    # Parse the structured response and extract all events
+    event_list = parse_all_events(llm_chained_template_response)
+    
+    # Print the parsed list of events
+    for event in event_list:
+        print(event, "\n")
 
 
