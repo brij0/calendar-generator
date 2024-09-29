@@ -14,12 +14,21 @@
 - [Tests](#tests)
 - [License](#license)
 
-![GitHub repo size](https://img.shields.io/github/repo-size/brij0/University-Course-Calendar-Automation?style=plastic)
-![GitHub top language](https://img.shields.io/github/languages/top/brij0/University-Course-Calendar-Automation?style=plastic)
+
+![GitHub repo size](https://img.shields.io/github/repo-size/brij0/calendar-generator?style=plastic)
+![GitHub top language](https://img.shields.io/github/languages/top/brij0/calendar-generator?style=plastic)
 
 ## Description
+This project is a real-time University Course Calendar Automation System that I whipped up in just **6 hours** with a little help from ChatGPT, YouTube, and, of course, my over-caffeinated brain. What started as a simple attempt to make my life easier by automatically adding academic events from course outlines to my Outlook calendar quickly spiraled into a much more "interesting" (read: complicated) project.
 
-This project automates the extraction and integration of academic events (like lectures, labs, exams, etc.) from course outlines into a user's Outlook calendar. It uses LLM (LLaMA 3.1) to parse PDF course outlines and then pushes the extracted events to the user's Outlook calendar. The events include details such as dates, times, locations, and descriptions. This system aims to save students time by eliminating the need to manually add academic events to their calendars.
+### Challenges Faced:
+- **Inconsistent LLaMA 3 Output**: One of the biggest issues I faced is that LLaMA 3 doesn’t always provide consistent output. Since course outlines often contain vague or incomplete information (e.g., "Assignment due after every lab section"), the system struggles to extract precise dates without further context, such as a student's specific lab schedule.
+- **Missing or Incomplete Information**: Many course outlines leave key details like dates, times, or locations as "TBA," and this causes issues when trying to add events to the Outlook calendar. If any of these fields are missing, the event cannot be properly created in the calendar.
+- **PDF Parsing Difficulties**: Parsing the text from PDFs was also a challenge, as the formatting varies widely between course outlines. Some outlines are well-structured, while others are more difficult to process programmatically.
+  
+By no means is this system perfect. In fact, its functionality relies heavily on how well the course outlines are structured and whether all necessary information is provided explicitly. The LLM (LLaMA 3) does its best to infer missing details, but it's not foolproof, especially when crucial context is missing or vague in the original document. This can lead to incomplete or incorrect calendar events being added.
+
+Despite these challenges, I am actively looking for solutions—so if anyone has any ideas for making this system more robust or can suggest a better prompt to get the best out of a course outline, I’m all ears. I’m even open to totally new solutions (though I’ll hate you for a while, but then I’ll be fine).
 
 ### Key Features:
 - **Automated event extraction** from PDF course outlines.
@@ -33,8 +42,9 @@ To run this project locally, follow these steps:
 
 1. **Clone the repository**:
     ```bash
-    git clone https://github.com/brij0/University-Course-Calendar-Automation.git
+    git clone https://github.com/brij0/calendar-generator.git
     ```
+    
 
 2. **Navigate to the project directory**:
     ```bash
@@ -101,12 +111,8 @@ Feel free to reach out for any questions, feedback, or collaborations:
 Special thanks to the following resources and individuals for their help and support throughout this project:
 
 - **YouTube Tutorials**: The following YouTube tutorials were invaluable in guiding the development of this project:
-  - [Working with PDF files in Python](https://www.youtube.com/watch?v=mrj6wYp94FE)
-  - [Python Outlook Automation](https://www.youtube.com/watch?v=GURxCmKzmDc)
-
-- **Friends**: A huge thanks to my friends for their help and feedback during the project. Check out their GitHub profiles:
-  - [Denil Dubariya](https://github.com/denildubariya18)
-  - [Jay Agrawat](https://github.com/JayAgravat1092)
+  - [Working with PDF files in Python by NeuralNine](https://www.youtube.com/watch?v=w2r2Bg42UPY)
+  - [Using Llama with groq cloud by codebasics](https://www.youtube.com/watch?v=CO4E_9V6li0)
 
 - **LangChain and Groq**: A special mention to LangChain and Groq for providing the LLaMA 3.1 integration capabilities.
 
