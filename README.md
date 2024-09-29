@@ -118,7 +118,4 @@ Special thanks to the following resources and individuals for their help and sup
 
 ## Tests
 
-To run the tests, you can use the following command:
-
-```bash
-pytest
+There are no specific tests for this project
