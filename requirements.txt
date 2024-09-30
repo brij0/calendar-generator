@@ -4,3 +4,5 @@ win32com==305         # For interacting with Microsoft Outlook
 requests==2.31.0      # For making API requests
 langchain-groq==0.0.1  # For LLaMA integration via LangChain
 langchain-core==0.0.1  # Core LangChain functionality
+
+#bvksdviu
