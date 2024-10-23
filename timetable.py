@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import re
 from datetime import datetime
+import time
 
 # ---------------------------------------------------------
 # Load API key and setup LLM for content processing
@@ -298,6 +299,44 @@ def process_and_add_events_from_pdfs(folder_path):
 # Main function to execute the process
 # ---------------------------------------------------------
 if __name__ == "__main__":
-    folder_path = "Sample Course Outlines"  
-    process_and_add_events_from_pdfs(folder_path)
-   
+    folder_path = "Sample Course Outlines" 
+    start_time = time.time() 
+    content = get_content_from_pdf("Sample Course Outlines//engg-3450-01-engg_3450_01_1725826678192.pdf")
+    pdf_extraction_time = time.time() - start_time
+    
+
+    text_clean_prompt = """
+            Please clean and format the following extracted text from a PDF document. Remove all unwanted special characters, 
+            replace garbled or non-standard characters with logical equivalents, and ensure that the output maintains a consistent,
+              readable structure. Logical replacements include:
+
+            Replace '�' with a space or an appropriate punctuation mark based on context.
+            Ensure that any incomplete words are completed or clarified.
+            Properly format all headings, subheadings, lists, and paragraphs.
+            Ensure that email addresses, URLs, and names are formatted correctly without extraneous symbols.
+            Remove unnecessary duplicate information, ensuring all relevant content is retained.
+            Keep important details such as course information, dates, and sections intact but improve their clarity.
+            The goal is to create a clean, readable, logically structured version of the original content without altering any of its intended meaning.
+
+
+            NO PREAMBLE
+"""
+
+    prompt = content + "\n" + text_clean_prompt
+
+
+    pre_1st_llm_time = time.time()
+    cleaned_text_from_llm = schedule(prompt)
+    post_1st_llm_time = time.time() - pre_1st_llm_time
+    
+
+    pre_2nd_llm_time = time.time()
+    for_llm_schedule = cleaned_text_from_llm + "\n" + prompt_extract.format()
+    result = schedule(for_llm_schedule)
+    post_2nd_llm_time = time.time() - pre_2nd_llm_time
+
+
+    print(cleaned_text_from_llm, "\n\n\n\n")
+    print(f"1st response time: {post_1st_llm_time}", "\n\n\n\n")
+    print(result)
+    print(f"2nd response time: {post_2nd_llm_time}", "\n\n\n\n")
