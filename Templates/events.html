@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Extracted Events</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            margin-top: 50px;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        h1 {
+            color: #007bff;
+            text-align: center;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border: none;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Extracted Events</h1>
+        {% if events %}
+            <table class="table table-bordered table-hover mt-4">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">Event Type</th>
+                        <th scope="col">Start Date</th>
+                        <th scope="col">End Date</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Days</th>
+                        <th scope="col">Time</th>
+                        <th scope="col">Location</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Weightage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                        <tr>
+                            <td>{{ event.event_type }}</td>
+                            <td>{{ event.start_date or 'N/A' }}</td>
+                            <td>{{ event.end_date or 'N/A' }}</td>
+                            <td>{{ event.date or 'N/A' }}</td>
+                            <td>{{ ", ".join(event.days) if event.days else 'N/A' }}</td>
+                            <td>{{ event.time or 'N/A' }}</td>
+                            <td>{{ event.location or 'N/A' }}</td>
+                            <td>{{ event.description or 'N/A' }}</td>
+                            <td>{{ event.weightage or 'N/A' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="alert alert-warning text-center mt-4">
+                No events found in the uploaded document. Please try again.
+            </div>
+        {% endif %}
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-secondary">Search Another Course</a>
+        </div>
+    </div>
+</body>
+</html>

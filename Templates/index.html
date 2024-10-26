@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Course Calendar Automation</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url('https://images.unsplash.com/photo-1560185127-1f1b0744c938?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');
+            background-size: cover;
+            background-attachment: fixed;
+            color: #fff;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 100px;
+        }
+        h1, p {
+            color: #fff;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">Course Calendar Automation</a>
+    </nav>
+    <div class="container mt-5">
+        <h1 class="text-center">Enter Course Name</h1>
+        <p class="text-center">Enter the course name (e.g., ENGG-3450) to automatically search for the course outline and add events to your calendar.</p>
+        <div class="row justify-content-center">
+            <form action="/search" method="post" class="col-md-6">
+                <div class="form-group">
+                    <input type="text" name="course_name" class="form-control" placeholder="Enter course name (e.g., ENGG-3450)" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Search</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
