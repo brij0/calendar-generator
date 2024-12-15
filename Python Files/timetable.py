@@ -16,11 +16,11 @@ def invoke_llm(content):
     # Load environment variables for API key
     load_dotenv()
 
-    # Initialize the LLM (LLaMA 3.1 model)
+    # Initialize the LLM (LLaMA 3.2 model)
     llm = ChatGroq(
         temperature=0,
         groq_api_key=os.getenv('GROQ_API_KEY'),  # API key loaded from environment variable
-        model_name="llama-3.2-90b-vision-preview"
+        model_name="llama-3.3-70b-versatile"
     )
     
     # Send content to the LLM for processing and return the response
@@ -314,7 +314,6 @@ def process_pdfs_make_event_list(pdf_input):
 if __name__ == "__main__":
     folder_path = "Sample Course Outlines" 
     start_time = time.time() 
-    event_list = process_pdfs_make_event_list("Sample Course Outlines/Course Outline_ENGG3700_F24.pdf")
+    event_list = process_pdfs_make_event_list("Sample Course Outlines/ENGG_3640.pdf")
     for event in event_list:
         print(event, "\n")
-    
