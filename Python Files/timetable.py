@@ -1,4 +1,4 @@
-import win32com.client
+import win32com.client # type: ignore
 from datetime import datetime, timedelta
 from langchain_groq import ChatGroq  # type: ignore
 from langchain_core.prompts import PromptTemplate  # type: ignore
@@ -20,7 +20,7 @@ def invoke_llm(content):
     llm = ChatGroq(
         temperature=0,
         groq_api_key=os.getenv('GROQ_API_KEY'),  # API key loaded from environment variable
-        model_name="llama-3.3-70b-versatile"
+        model_name="llama3-70b-8192"
     )
     
     # Send content to the LLM for processing and return the response
@@ -87,15 +87,6 @@ prompt_extract = PromptTemplate.from_template(
         Location: Provide the location of the event. If the location is not provided, use 'TBA'.
         Description: Provide a brief description of the event (e.g., course name, lab number, or exam type).
         Weightage: For events that are graded (e.g., assignments, exams, lab reports), provide the weightage. If not applicable, use 'Null'.
-
-        "event_type": "Lecture",
-        "start_date": "2024-09-05",
-        "end_date": "2024-12-13",
-        "days": ["Monday", "Wednesday", "Friday"],
-        "time": "12:30 pm - 1:20 pm",
-        "location": "ROZH*102",
-        "description": "ENGG*3450 lectures",
-        "weightage": "Null"
 
 
         "event_type": "Midterm Exam",
@@ -314,6 +305,6 @@ def process_pdfs_make_event_list(pdf_input):
 if __name__ == "__main__":
     folder_path = "Sample Course Outlines" 
     start_time = time.time() 
-    event_list = process_pdfs_make_event_list("Sample Course Outlines/ENGG_3640.pdf")
+    event_list = process_pdfs_make_event_list("Sample Course Outlines/ENGG_4450.pdf")
     for event in event_list:
         print(event, "\n")
