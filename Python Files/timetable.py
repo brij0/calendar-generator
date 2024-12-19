@@ -1,8 +1,6 @@
-import win32com.client # type: ignore
-from datetime import datetime, timedelta
-from langchain_groq import ChatGroq  # type: ignore
-from langchain_core.prompts import PromptTemplate  # type: ignore
-import fitz  # type: ignore
+from datetime import datetime
+from langchain_groq import ChatGroq
+import fitz
 import os
 from dotenv import load_dotenv
 import re
@@ -19,8 +17,8 @@ def invoke_llm(content):
     # Initialize the LLM (LLaMA 3.2 model)
     llm = ChatGroq(
         temperature=0,
-        groq_api_key=os.getenv('GROQ_API_KEY'),  # API key loaded from environment variable
-        model_name="llama3-70b-8192"
+        groq_api_key=os.getenv('GROQ_API_KEY1'),  # API key loaded from environment variable
+        model_name="llama-3.3-70b-versatile"
     )
     
     # Send content to the LLM for processing and return the response
@@ -52,7 +50,7 @@ def extract_and_clean_pdf_text(pdf_path):
     text = ""
 
     # Loop through each page to extract the text
-    for page_num in range(doc.page_count):
+    for page_num in range(doc.page_count - 3):
         page = doc.load_page(page_num)
         text += page.get_text("text")  # Extract text from the page
     
@@ -63,49 +61,60 @@ def extract_and_clean_pdf_text(pdf_path):
 # ---------------------------------------------------------
 # LLM prompt to extract events from the course outline
 # ---------------------------------------------------------
-def generate_llm_prompt(content):
-    # Format the prompt and append the content
-    prompt = prompt_extract.format() + "\n" + content
 
-    # Send to LLM for processing and return the result
-    result = invoke_llm(prompt)
-    return result
 
-# LLM prompt definition for extracting academic events
-prompt_extract = PromptTemplate.from_template(
+def generate_llm_prompt(course_details, student_details):
+    prompt_template = """
+    Task: Extract academic events for the given course section and format them in the following structure:
+
+    Format for each event:
+    1. Event Type: (e.g., Lecture, Lab, Midterm Exam, Final Exam, Assignment, Lab Report).
+    2. Date: For one-time events (e.g., exams), provide the exact date.
+    3. Days: For recurring events (e.g., lectures, labs), specify the days (e.g., Monday, Wednesday, Friday).
+    4. Time: Provide the start and end time of the event. If the time is not provided, use 'TBA' or 'N/A'.
+    5. Location: Provide the location. If the location is not provided, use 'TBA'.
+    6. Description: Provide a brief description (e.g., course name, lab details, or exam type).
+    7. Weightage: For graded events (e.g., assignments, exams), provide the weightage. If not applicable, use 'Null'.
+
+    Example for FORMATTING ONLY:
+    1. Event Type: Lecture   
+       Date: N/A  
+       Days: Monday, Wednesday, Friday  
+       Time: 12:30 PM - 1:20 PM  
+       Location: Guelph, ROZH102  
+       Description: ENGG*3450*0101 Lecture by Abou El Nasr, M  
+       Weightage: Null  
+
+    2. Event Type: Lab 1  
+       Date: 2024-09-30  
+       Days: Monday  
+       Time: 3:30 PM - 5:20 PM  
+       Location: Guelph, RICH1504  
+       Description: ENGG*3450*0101 Lab  
+       Weightage: 7.5%  
+
+    3. Event Type: Lab 2 
+       Date: 2024-10-28  
+       Days: Monday  
+       Time: 3:30 PM - 5:20 PM  
+       Location: Guelph, RICH1504  
+       Description: ENGG*3450*0101 Lab  
+       Weightage: 7.5% 
+
+    Details for this task:
+    Student Section: {student_details}
+
+    Course Information:
+    {course_details}
+
+    Extract and structure all events in the specified format. 
+    NO PREAMBLE
     """
-        Extract all important academic events from this course outline and provide the details for each event in the exact format given below. Do not omit any relevant information. For any missing information (e.g., 'TBA' for location), return 'TBA' or 'N/A' as applicable.
-
-        For each event, provide the following details:
-
-        Event Type: (e.g., Lecture, Lab, Midterm Exam, Final Exam, Assignment, Lab Report).
-        Start Date: For recurring events (like lectures, labs), provide the start date.
-        End Date: For recurring events (like lectures, labs), provide the end date.
-        Date: For one-time events (like exams, assignments), provide the exact date.
-        Days: For recurring events (e.g., lectures, labs), specify the days of the week (e.g., Monday, Wednesday, Friday). For one-time events, leave this as 'N/A'.
-        Time: Provide the start and end time of the event. If the time is not provided, use 'TBA' or 'N/A'.
-        Location: Provide the location of the event. If the location is not provided, use 'TBA'.
-        Description: Provide a brief description of the event (e.g., course name, lab number, or exam type).
-        Weightage: For events that are graded (e.g., assignments, exams, lab reports), provide the weightage. If not applicable, use 'Null'.
+    prompt = prompt_template.format(student_details=student_details, course_details=course_details)
+    return invoke_llm(prompt)
 
 
-        "event_type": "Midterm Exam",
-        "date": "2024-10-19",
-        "time": "12:00 pm - 2:00 pm",
-        "location": "TBA",
-        "description": "Midterm exam",
-        "weightage": "25%"
 
-         "event_type": "Assignment 1",
-        "date": "2024-10-07",
-        "time": "12:30 pm - 1:20 pm",
-        "location": "N/A",
-        "description": "Assignment 1",
-        "weightage": "7.5%"
-
-
-        NO PREAMBLE
-    """)
 
 # ---------------------------------------------------------
 # Parse each event and extract details from the LLM response
@@ -172,41 +181,6 @@ def extract_all_event_details(events_str):
 
     return events
 
-# ---------------------------------------------------------
-# Function to add events to Outlook Calendar
-# ---------------------------------------------------------
-def add_event_to_outlook_calendar(subject, start_time, end_time, location=None, recurrence=None, body=None):
-    try:
-        # Connect to Outlook
-        outlook = win32com.client.Dispatch("Outlook.Application")
-        calendar = outlook.GetNamespace("MAPI").GetDefaultFolder(9)  # 9 refers to the calendar
-
-        # Create a new appointment item
-        appointment = calendar.Items.Add(1)  # 1 refers to a regular appointment
-
-        # Set the details of the appointment
-        appointment.Subject = subject
-        appointment.Start = start_time
-        appointment.End = end_time
-
-        if location:
-            appointment.Location = location
-        if body:
-            appointment.Body = body
-
-        # Handle recurrence if specified
-        if recurrence:
-            recurrence_pattern = appointment.GetRecurrencePattern()
-            recurrence_pattern.RecurrenceType = recurrence.get("type", 1)  # Default to weekly
-            recurrence_pattern.Interval = recurrence.get("interval", 1)  # Every X weeks
-            recurrence_pattern.PatternStartDate = recurrence.get("start_date", start_time)
-            recurrence_pattern.PatternEndDate = recurrence.get("end_date", start_time + timedelta(weeks=12))  # Default 12 weeks
-
-        # Save the appointment
-        appointment.Save()
-        print(f"Event '{subject}' added to calendar.")
-    except Exception as e:
-        print(f"Error adding event '{subject}' to calendar: {str(e)}")
 
 # ---------------------------------------------------------
 # Helper function to parse date and time strings
@@ -224,75 +198,12 @@ def parse_date_and_time(date_str, time_str):
         print(f"Error parsing date/time: {str(e)}")
         return None, None
 
-# ---------------------------------------------------------
-# Function to handle and add all events to the Outlook Calendar
-# ---------------------------------------------------------
-def process_and_add_events_to_calendar(events):
-    for event in events:
-        subject = event.get('description', 'No Title')
-        date_str = event.get('date')
-        time_str = event.get('time', 'N/A')
-        location = event.get('location', 'TBA')
-        body = event.get('description')
-
-        # Parse the date and time, skipping if both are 'TBA'/'N/A'
-        if date_str and 'TBA' not in date_str:
-            if ',' in date_str:
-                dates = [d.split(' (')[0].strip() for d in date_str.split(',')]  # Extract individual dates
-            else:
-                dates = [date_str]
-        else:
-            dates = []
-
-        # Handle the time string
-        if time_str and time_str != 'N/A':
-            times = time_str.split(',')
-        else:
-            times = ['N/A']
-
-        for i, date in enumerate(dates):
-            time = times[i] if i < len(times) else 'N/A'
-            start_time, end_time = parse_date_and_time(date, time)
-
-            if start_time and end_time:
-                add_event_to_outlook_calendar(subject, start_time, end_time, location, None, body)
-            else:
-                print(f"Skipping event '{subject}' due to missing start or end time.")
-
-# ---------------------------------------------------------
-# Function to handle all course outline from the folder
-# ---------------------------------------------------------
-def process_pdfs_and_add_events_to_calendar(folder_path):
-    # Loop through each file in the specified folder
-    for file_name in os.listdir(folder_path):
-        # Check if the file is a PDF
-        if file_name.endswith('.pdf'):
-            pdf_path = os.path.join(folder_path, file_name)
-            # Extract the content from the PDF
-            pdf_content = extract_and_clean_pdf_text(pdf_path)
-
-            # Send the extracted content to the LLM template to process and return structured event data
-            llm_chained_template_response = generate_llm_prompt(pdf_content)
-
-            # Parse the structured response and extract all events
-            event_list = extract_all_event_details(llm_chained_template_response)
-
-            # Print the parsed list of events for debugging
-            for event in event_list:
-                print(event, "\n")
-
-            # Add all events to Outlook calendar
-            process_and_add_events_to_calendar(event_list)
-
-            print(f"Finished processing {file_name}.\n")
-
-
-def process_pdfs_make_event_list(pdf_input):
+def process_pdfs_make_event_list(pdf_input, student_details):
     # Extract the content from the PDF
     pdf_content = extract_and_clean_pdf_text(pdf_input)
 
     # Send the extracted content to the LLM template to process and return structured event data
-    llm_chained_template_response = generate_llm_prompt(pdf_content)
+    llm_chained_template_response = generate_llm_prompt(pdf_content, student_details)
     # Parse the structured response and extract all events
     event_list = extract_all_event_details(llm_chained_template_response)
     return event_list
@@ -302,9 +213,32 @@ def process_pdfs_make_event_list(pdf_input):
 # ---------------------------------------------------------
 # Main function to execute the process
 # ---------------------------------------------------------
-if __name__ == "__main__":
-    folder_path = "Sample Course Outlines" 
+if __name__ == "__main__": 
     start_time = time.time() 
-    event_list = process_pdfs_make_event_list("Sample Course Outlines/ENGG_4450.pdf")
+    Student_Details = """
+    Section Name: ENGG*3390*0201
+    Instructors: Aboagye, S
+
+    Meeting Details:
+    1. Event Type: Lecture (LEC)
+    - Days: Tuesday and Thursday
+    - Times: 10:00 AM - 11:20 AM
+    - Dates: 9/5/2024 - 12/13/2024
+    - Location: Guelph, MCKN120
+
+    2. Event Type: Labs
+    - Days: Friday
+    - Times: 11:30 AM - 1:20 PM
+    - Dates: 9/5/2024 - 12/13/2024
+    - Location: Guelph, THRN2307
+
+    3. Event Type: Exam
+    - Day: Wednesday
+    - Times: 7:00 PM - 9:00 PM
+    - Dates: 12/4/2024
+    - Location: Guelph, ROZH101
+    """ 
+
+    event_list = process_pdfs_make_event_list("Sample Course Outlines/ENGG_3390.pdf", Student_Details)
     for event in event_list:
         print(event, "\n")

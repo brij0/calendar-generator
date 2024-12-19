@@ -1,5 +1,8 @@
 from seleniumbase import SB
 from bs4 import BeautifulSoup
+import mysql.connector
+from sympy import det 
+from database import *
 
 # Base URL with course code dynamically appended
 BASE_URL = 'https://colleague-ss.uoguelph.ca/Student/Courses/Search?keyword='
@@ -90,7 +93,8 @@ def extract_course_sections_with_type(html):
                 instructors.append(instructor_span.get_text(strip=True))
 
         section_info['meeting_details'] = meeting_details
-        section_info['instructors'] = instructors if instructors else ['TBD']
+        section_info['instructors'] = instructors
+
         sections.append(section_info)
 
     return sections
@@ -104,10 +108,73 @@ def scrape_course_sections(course_code):
     """
     page_source = get_course_page(course_code)
     if page_source:
+        details = []
         sections = extract_course_sections_with_type(page_source)
         for section in sections:
-            print(section, "\n\n\n")
+            details.append(section)
+        return details
+    
+    else:
+        print("Failed to scrape course sections!")
+    
 
+def add_section_to_db(course):
+    """
+    Add scraped course sections to the database using executemany for bulk insertion.
+
+    Args:
+        course (str): The course code to scrape and add to the database.
+    """
+    # Connect to the database
+    connection, cursor = connect_to_database()
+
+    try:
+        # Scrape the course sections
+        scraped = scrape_course_sections(course)
+
+        if scraped:
+            # Prepare a list of tuples for bulk insertion
+            rows_to_insert = []
+
+            for section in scraped:
+                section_name = section.get('section_name', 'Unknown')
+                seats = section.get('seats', 'Unknown')
+                instructors = ', '.join(section.get('instructors', ['Unknown']))
+                meeting_details = section.get('meeting_details', [])
+
+                for meeting in meeting_details:
+                    times = ', '.join(meeting.get('times', ['Unknown']))
+                    locations = ', '.join(meeting.get('locations', ['Unknown']))
+                    event_type = meeting.get('event_type', 'Unknown')
+
+                    # Append each row as a tuple
+                    rows_to_insert.append((
+                        course, section_name, seats, instructors, times, locations, event_type
+                    ))
+
+            # Use executemany to insert all rows at once
+            query = """
+                INSERT INTO sections (course_code, section_name, seats, instructors, times, locations, event_type)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.executemany(query, rows_to_insert)
+
+            # Commit the transaction
+            connection.commit()
+            print(f"Successfully added {len(rows_to_insert)} rows for course: {course}")
+        else:
+            print("No sections found for the course!")
+
+    except Exception as e:
+        print(f"An error occurred while adding sections to the database: {e}")
+        connection.rollback()  # Roll back changes on error
+
+    finally:
+        # Close the cursor and connection
+        cursor.close()
+        connection.close()
+        
 if __name__ == '__main__':
-    course_code = input("Enter course code (e.g., ENGG*3390): ")
-    scrape_course_sections(course_code)
+    course = input("Enter course code (e.g., ENGG*3390): ")
+    scraped = scrape_course_sections(course)
+    print(scraped)

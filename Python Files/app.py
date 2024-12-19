@@ -1,12 +1,12 @@
-from flask import Flask, request, render_template, redirect, url_for  # type: ignore
+from flask import Flask, request, render_template, redirect, url_for
 import os
-from werkzeug.utils import secure_filename  # type: ignore
+from werkzeug.utils import secure_filename
 import time
 
 # Import your existing functions
 from timetable import *
 
-app = Flask(__name__)
+app=Flask(__name__,template_folder='D:/University/All Projects/Time Table project/templates')
 
 # Configuration for file uploads
 UPLOAD_FOLDER = 'Sample Course Outlines'  # Folder containing pre-existing course outline PDFs
