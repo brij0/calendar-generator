@@ -1,11 +1,37 @@
+from multiprocessing import connection
+from scipy.fftpack import sc_diff
 from seleniumbase import SB
 from bs4 import BeautifulSoup
 import mysql.connector
 from sympy import det 
 from database import *
 
-# Base URL with course code dynamically appended
-BASE_URL = 'https://colleague-ss.uoguelph.ca/Student/Courses/Search?keyword='
+
+All_Courses = [
+    "ENGG*2010", "ENGG*4010", "ENGG*3020", "ENGG*2120", "ENGG*3010", "ENGG*3070",
+    "ENGG*3120", "ENGG*3150", "ENGG*3220", "ENGG*3430", "ENGG*3470", "ENGG*3670",
+    "ENGG*3700", "ENGG*4030", "ENGG*4050", "ENGG*4090", "ENGG*4300", "ENGG*4440",
+    "ENGG*4470", "ENGG*4510", "ENGG*4580", "ENGG*4760", "ENGG*4810", "ENGG*4820",
+    "ENGG*1210", "ENGG*1420", "ENGG*1500", "ENGG*2160", "ENGG*2230", "ENGG*2340",
+    "ENGG*2550", "ENGG*2560", "ENGG*3080", "ENGG*3130", "ENGG*3140", "ENGG*3240",
+    "ENGG*3250", "ENGG*3260", "ENGG*3280", "ENGG*3340", "ENGG*3570", "ENGG*3650",
+    "ENGG*4020", "ENGG*4040", "ENGG*4220", "ENGG*4240", "ENGG*4360", "ENGG*4370",
+    "ENGG*4390", "ENGG*4400", "ENGG*4430", "ENGG*4460", "ENGG*4680", "ENGG*4770",
+    "ENGG*2100", "ENGG*4380", "ENGG*4110", "ENGG*4130", "ENGG*4160", "ENGG*4170"
+]
+
+
+C_Eng_courses = ["ENGG*3450","ENGG*1410"
+    # "MATH*1200", "ENGG*1100"
+    # "MATH*1210", "ENGG*1500", "ENGG*2400", "MATH*2270", "ENGG*2450",
+    # "MATH*2130", "ENGG*3240", "ENGG*3410", "ENGG*3450", "ENGG*3100",
+    # "PHYS*1010", "CIS*2520", "ENGG*2410", "ENGG*2100", "ENGG*3380",
+    # "STAT*2120", "ENGG*4450", "ENGG*3640", "CIS*3110", "CIS*3490",
+    # "ENGG*3210", "ENGG*4420", "ENGG*4540", "ENGG*4550", "ENGG*3390",
+    # "ENGG*4000", "COOP*1100", "PHYS*1130", "ENGG*1210", "CIS*2910",
+    # "HIST*1250", "ENGG*3050"
+]
+
 
 def initialize_driver():
     """
@@ -16,29 +42,8 @@ def initialize_driver():
     """
     return SB(uc=True, browser="Chrome", incognito=True)
 
-def get_course_page(course_code):
-    """
-    Scrape the course page content using SeleniumBase.
-    
-    Args:
-        course_code (str): The course code to be appended to the base URL.
-    
-    Returns:
-        str: The HTML content of the course page.
-    """
-    url = BASE_URL + course_code
-    with initialize_driver() as sb:
-        try:
-            sb.open(url)
-            button_selector = f'button[aria-controls="collapsible-view-available-sections-for-{course_code}-collapseBody"]'
-            sb.click(button_selector, timeout=10, delay=0.01)
-            sb.wait(3)
-            return sb.get_page_source()
-        except Exception as e:
-            print(f"An error occurred while scraping course sections: {e}")
-            return None
 
-def extract_course_sections_with_type(html):
+def scrape_course_sections(course_html):
     """
     Extract relevant course details from HTML content.
     
@@ -48,10 +53,11 @@ def extract_course_sections_with_type(html):
     Returns:
         list: A list of dictionaries containing course section details.
     """
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(course_html, 'html.parser')
     tables = soup.find_all('table', class_='esg-table esg-table--no-mobile esg-section--margin-bottom search-sectiontable')
-    sections = []
-
+    sections = []  # Changed from dict to list since we're appending, not using section names as keys
+    print(f"Found {len(tables)} tables on the page")
+    
     for table in tables:
         section_info = {}
 
@@ -95,86 +101,85 @@ def extract_course_sections_with_type(html):
         section_info['meeting_details'] = meeting_details
         section_info['instructors'] = instructors
 
-        sections.append(section_info)
-
+        sections.append(section_info)  # Append to list instead of dict
+        
     return sections
 
-def scrape_course_sections(course_code):
-    """
-    Main function to execute scraping and extraction of course sections.
-    
-    Args:
-        course_code (str): The course code to be scraped.
-    """
-    page_source = get_course_page(course_code)
-    if page_source:
-        details = []
-        sections = extract_course_sections_with_type(page_source)
-        for section in sections:
-            details.append(section)
-        return details
-    
-    else:
-        print("Failed to scrape course sections!")
-    
-
-def add_section_to_db(course):
+def add_section_to_db(course_data):
     """
     Add scraped course sections to the database using executemany for bulk insertion.
 
     Args:
-        course (str): The course code to scrape and add to the database.
+        course_data (dict): Dictionary with course codes as keys and lists of section info as values
     """
-    # Connect to the database
     connection, cursor = connect_to_database()
-
+    
     try:
-        # Scrape the course sections
-        scraped = scrape_course_sections(course)
-
-        if scraped:
-            # Prepare a list of tuples for bulk insertion
-            rows_to_insert = []
-
-            for section in scraped:
-                section_name = section.get('section_name', 'Unknown')
-                seats = section.get('seats', 'Unknown')
-                instructors = ', '.join(section.get('instructors', ['Unknown']))
-                meeting_details = section.get('meeting_details', [])
-
-                for meeting in meeting_details:
-                    times = ', '.join(meeting.get('times', ['Unknown']))
-                    locations = ', '.join(meeting.get('locations', ['Unknown']))
-                    event_type = meeting.get('event_type', 'Unknown')
-
+        rows_to_insert = []
+        for course_code, sections in course_data.items():
+            if sections:  # Check if sections exist for this course
+                for section in sections:
+                    section_name = section.get('section_name')
+                    seats = section.get('seats', '0/0')
+                    instructors = ', '.join(section.get('instructors', ['Unknown']))
                     # Append each row as a tuple
-                    rows_to_insert.append((
-                        course, section_name, seats, instructors, times, locations, event_type
-                    ))
+                    rows_to_insert.append((section_name, seats, instructors))
+                
+                print(f"Processing {len(sections)} sections for course: {course_code}")
+            else:
+                print(f"No sections found for course: {course_code}")
 
+        if rows_to_insert:
             # Use executemany to insert all rows at once
             query = """
-                INSERT INTO sections (course_code, section_name, seats, instructors, times, locations, event_type)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO courses (section_name, seats, instructor)
+                VALUES (%s, %s, %s)
             """
             cursor.executemany(query, rows_to_insert)
-
-            # Commit the transaction
             connection.commit()
-            print(f"Successfully added {len(rows_to_insert)} rows for course: {course}")
+            print(f"Successfully added {len(rows_to_insert)} total rows to database")
         else:
-            print("No sections found for the course!")
+            print("No data to insert into database")
 
     except Exception as e:
         print(f"An error occurred while adding sections to the database: {e}")
-        connection.rollback()  # Roll back changes on error
+        connection.rollback()
 
     finally:
-        # Close the cursor and connection
         cursor.close()
         connection.close()
-        
+
+def scrape_multiple_courses(list_of_courses):
+    """
+    Scrape multiple courses and return their section information.
+
+    Args:
+        list_of_courses (list): A list of course codes to scrape
+
+    Returns:
+        dict: Dictionary with course codes as keys and lists of section info as values
+    """
+    scraped_courses = {}
+    base_url = 'https://colleague-ss.uoguelph.ca/Student/Courses/Search?keyword={}'
+    
+    with SB(browser="chrome") as sb:
+        for course in list_of_courses:
+            url = base_url.format(course)
+            try:
+                sb.open(url)
+                button_selector = f'button[aria-controls="collapsible-view-available-sections-for-{course}-collapseBody"]'
+                sb.click(button_selector, timeout=10, delay=0.01)
+                sb.wait(5)
+                page_source = sb.get_page_source()
+                scraped_courses[course] = scrape_course_sections(page_source)
+            except Exception as e:
+                print(f"An error occurred while scraping course sections for {course}: {e}")
+                scraped_courses[course] = []  # Add empty list for failed courses
+                continue
+    
+    return scraped_courses
+
 if __name__ == '__main__':
-    course = input("Enter course code (e.g., ENGG*3390): ")
-    scraped = scrape_course_sections(course)
-    print(scraped)
+    scraped = scrape_multiple_courses(C_Eng_courses)
+    add_section_to_db(scraped)  # Pass the scraped data, not the course list
+

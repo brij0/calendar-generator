@@ -73,10 +73,9 @@ def generate_llm_prompt(course_details, student_details):
     3. Days: For recurring events (e.g., lectures, labs), specify the days (e.g., Monday, Wednesday, Friday).
     4. Time: Provide the start and end time of the event. If the time is not provided, use 'TBA' or 'N/A'.
     5. Location: Provide the location. If the location is not provided, use 'TBA'.
-    6. Description: Provide a brief description (e.g., course name, lab details, or exam type).
-    7. Weightage: For graded events (e.g., assignments, exams), provide the weightage. If not applicable, use 'Null'.
+    7. Weightage: For graded events (e.g., assignments, exams), provide the weightage of that event in absolute terms not relative. If not applicable, use 0.
 
-    Example for FORMATTING ONLY:
+     Example for FORMATTING ONLY:
     1. Event Type: Lecture   
        Date: N/A  
        Days: Monday, Wednesday, Friday  
@@ -101,6 +100,7 @@ def generate_llm_prompt(course_details, student_details):
        Description: ENGG*3450*0101 Lab  
        Weightage: 7.5% 
 
+    
     Details for this task:
     Student Section: {student_details}
 

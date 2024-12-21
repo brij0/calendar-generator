@@ -9,7 +9,7 @@ from timetable import *
 app=Flask(__name__,template_folder='D:/University/All Projects/Time Table project/templates')
 
 # Configuration for file uploads
-UPLOAD_FOLDER = 'Sample Course Outlines'  # Folder containing pre-existing course outline PDFs
+UPLOAD_FOLDER = 'D:/University/All Projects/Time Table project/Sample Course Outlines'  # Folder containing pre-existing course outline PDFs
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Home page to enter course name
@@ -32,13 +32,37 @@ def search_course():
         if file.lower().startswith(course_name) and file.endswith('.pdf'):
             file_name = file
             break
+    
+    student_details = """
+        Section Name: ENGG*3390*0201
+        Instructors: Aboagye, S
+
+        Meeting Details:
+        1. Event Type: Lecture (LEC)
+        - Days: Tuesday and Thursday
+        - Times: 10:00 AM - 11:20 AM
+        - Dates: 9/5/2024 - 12/13/2024
+        - Location: Guelph, MCKN120
+
+        2. Event Type: Labs
+        - Days: Friday
+        - Times: 11:30 AM - 1:20 PM
+        - Dates: 9/5/2024 - 12/13/2024
+        - Location: Guelph, THRN2307
+
+        3. Event Type: Exam
+        - Day: Wednesday
+        - Times: 7:00 PM - 9:00 PM
+        - Dates: 12/4/2024
+        - Location: Guelph, ROZH101  
+    """
 
     if file_name:
         # File found, process the PDF
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_name)
 
         # Parse the events
-        event_list = process_pdfs_make_event_list(file_path)
+        event_list = process_pdfs_make_event_list(file_path, student_details)
 
         # Add events to Outlook calendar (optional)
 

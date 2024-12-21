@@ -8,6 +8,7 @@ CREATE TABLE courses (
     instructor VARCHAR(255)
 );
 
+SELECT * FROM courses;
 -- Create the events table
 CREATE TABLE events (
     event_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -19,3 +20,5 @@ CREATE TABLE events (
     location VARCHAR(255),
     FOREIGN KEY (course_id) REFERENCES courses(course_id)
 );
+
+-- DELETE FROM courses WHERE course_id = '1';
