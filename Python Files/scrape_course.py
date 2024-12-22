@@ -21,7 +21,8 @@ All_Courses = [
 ]
 
 
-C_Eng_courses = ["ENGG*3450","ENGG*1410"
+C_Eng_courses = ["ENGG*3450"
+                 #,"ENGG*1410"
     # "MATH*1200", "ENGG*1100"
     # "MATH*1210", "ENGG*1500", "ENGG*2400", "MATH*2270", "ENGG*2450",
     # "MATH*2130", "ENGG*3240", "ENGG*3410", "ENGG*3450", "ENGG*3100",
@@ -107,7 +108,8 @@ def scrape_course_sections(course_html):
 
 def add_section_to_db(course_data):
     """
-    Add scraped course sections to the database using executemany for bulk insertion.
+    Add scraped course sections and their associated events to the database.
+    Matches the MySQL schema with specific field lengths and constraints.
 
     Args:
         course_data (dict): Dictionary with course codes as keys and lists of section info as values
@@ -115,39 +117,66 @@ def add_section_to_db(course_data):
     connection, cursor = connect_to_database()
     
     try:
-        rows_to_insert = []
+        # Dictionary to store section_name to course_id mapping
+        section_id_map = {}
+        
+        # First, insert sections and store their IDs
         for course_code, sections in course_data.items():
-            if sections:  # Check if sections exist for this course
+            if sections:
                 for section in sections:
-                    section_name = section.get('section_name')
-                    seats = section.get('seats', '0/0')
-                    instructors = ', '.join(section.get('instructors', ['Unknown']))
-                    # Append each row as a tuple
-                    rows_to_insert.append((section_name, seats, instructors))
+                    # Truncate fields to match VARCHAR lengths if necessary
+                    section_name = section.get('section_name', '')[:50]  # VARCHAR(50)
+                    seats = section.get('seats', '0/0')[:50]  # VARCHAR(50)
+                    instructors = ', '.join(section.get('instructors', ['Unknown']))[:255]  # VARCHAR(255)
+                    
+                    # Insert single section
+                    query1 = """
+                        INSERT INTO courses (section_name, seats, instructor)
+                        VALUES (%s, %s, %s)
+                    """
+                    cursor.execute(query1, (section_name, seats, instructors))
+                    
+                    # Get the last inserted ID
+                    course_id = cursor.lastrowid
+                    section_id_map[section_name] = course_id
+                    
+                    # Insert associated events using the course_id
+                    meeting_details = section.get('meeting_details', [])
+                    for meeting in meeting_details:
+                        # Handle times - join if it's a list and truncate to field length
+                        times = (', '.join(meeting.get('times', [])) if isinstance(meeting.get('times'), list) 
+                               else str(meeting.get('times', '')))[:255]
+                        
+                        # Handle location - take first location if it's a list, otherwise use as is
+                        locations = meeting.get('locations', [])
+                        location = (locations[0] if isinstance(locations, list) and locations 
+                                  else str(locations))[:255]
+                        
+                        event_type = str(meeting.get('event_type', 'Unknown'))[:50]  # VARCHAR(50)
+                        
+                        query2 = """
+                            INSERT INTO events (course_id, event_type, times, location)
+                            VALUES (%s, %s, %s, %s)
+                        """
+                        cursor.execute(query2, (course_id, event_type, times, location))
                 
-                print(f"Processing {len(sections)} sections for course: {course_code}")
+                print(f"Processed {len(sections)} sections for course: {course_code}")
             else:
                 print(f"No sections found for course: {course_code}")
 
-        if rows_to_insert:
-            # Use executemany to insert all rows at once
-            query = """
-                INSERT INTO courses (section_name, seats, instructor)
-                VALUES (%s, %s, %s)
-            """
-            cursor.executemany(query, rows_to_insert)
-            connection.commit()
-            print(f"Successfully added {len(rows_to_insert)} total rows to database")
-        else:
-            print("No data to insert into database")
+        connection.commit()
+        print("Successfully added all sections and events to database")
 
     except Exception as e:
-        print(f"An error occurred while adding sections to the database: {e}")
+        print(f"An error occurred while adding data to the database: {e}")
+        print(f"Error details: {str(e)}")
         connection.rollback()
 
     finally:
         cursor.close()
         connection.close()
+
+    return section_id_map
 
 def scrape_multiple_courses(list_of_courses):
     """

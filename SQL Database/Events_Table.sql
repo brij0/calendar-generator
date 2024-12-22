@@ -9,16 +9,20 @@ CREATE TABLE courses (
 );
 
 SELECT * FROM courses;
+SELECT * FROM events;
+
+
+-- truncate table courses;
+-- truncate table events;
+
+
 -- Create the events table
 CREATE TABLE events (
     event_id INT AUTO_INCREMENT PRIMARY KEY,
     course_id INT NOT NULL,
     event_type VARCHAR(50),
     times VARCHAR(255),
-    start_date DATE,
-    end_date DATE,
     location VARCHAR(255),
     FOREIGN KEY (course_id) REFERENCES courses(course_id)
 );
 
--- DELETE FROM courses WHERE course_id = '1';
