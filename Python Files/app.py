@@ -2,6 +2,8 @@ from flask import Flask, request, render_template, redirect, url_for
 import os
 from werkzeug.utils import secure_filename
 import time
+from database import *
+from scrape_course import *
 
 # Import your existing functions
 from timetable import *
@@ -21,55 +23,20 @@ def index():
 @app.route('/search', methods=['POST'])
 def search_course():
     # Get the course name from the form
-    course_name = request.form.get('course_name', '').strip().lower()
-
-    if not course_name:
-        return redirect(url_for('index'))
-
-    # Search for the PDF file that matches the course name
-    file_name = None
-    for file in os.listdir(app.config['UPLOAD_FOLDER']):
-        if file.lower().startswith(course_name) and file.endswith('.pdf'):
-            file_name = file
-            break
+    course_name = request.form.get('course_name', '').strip().upper()
+    course_code = request.form.get('course_code', '').strip().upper()
+    section_number = request.form.get('section_number', '').strip().upper()
     
-    student_details = """
-        Section Name: ENGG*3390*0201
-        Instructors: Aboagye, S
-
-        Meeting Details:
-        1. Event Type: Lecture (LEC)
-        - Days: Tuesday and Thursday
-        - Times: 10:00 AM - 11:20 AM
-        - Dates: 9/5/2024 - 12/13/2024
-        - Location: Guelph, MCKN120
-
-        2. Event Type: Labs
-        - Days: Friday
-        - Times: 11:30 AM - 1:20 PM
-        - Dates: 9/5/2024 - 12/13/2024
-        - Location: Guelph, THRN2307
-
-        3. Event Type: Exam
-        - Day: Wednesday
-        - Times: 7:00 PM - 9:00 PM
-        - Dates: 12/4/2024
-        - Location: Guelph, ROZH101  
-    """
-
-    if file_name:
-        # File found, process the PDF
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_name)
-
         # Parse the events
-        event_list = process_pdfs_make_event_list(file_path, student_details)
+    event_list = extract_section_info(course_name, course_code, section_number)
+    print(event_list)
 
         # Add events to Outlook calendar (optional)
 
-        return render_template('events.html', events=event_list)
+    return render_template('events.html', events=event_list)
 
-    # If file not found, redirect to home page with a message
-    return redirect(url_for('index'))
+    # # If file not found, redirect to home page with a message
+    # return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)

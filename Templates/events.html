@@ -38,28 +38,16 @@
                 <thead class="thead-dark">
                     <tr>
                         <th scope="col">Event Type</th>
-                        <th scope="col">Start Date</th>
-                        <th scope="col">End Date</th>
-                        <th scope="col">Date</th>
-                        <th scope="col">Days</th>
                         <th scope="col">Time</th>
                         <th scope="col">Location</th>
-                        <th scope="col">Description</th>
-                        <th scope="col">Weightage</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for event in events %}
                         <tr>
                             <td>{{ event.event_type }}</td>
-                            <td>{{ event.start_date or 'N/A' }}</td>
-                            <td>{{ event.end_date or 'N/A' }}</td>
-                            <td>{{ event.date or 'N/A' }}</td>
-                            <td>{{ ", ".join(event.days) if event.days else 'N/A' }}</td>
-                            <td>{{ event.time or 'N/A' }}</td>
+                            <td>{{ event.times or 'N/A' }}</td>
                             <td>{{ event.location or 'N/A' }}</td>
-                            <td>{{ event.description or 'N/A' }}</td>
-                            <td>{{ event.weightage or 'N/A' }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

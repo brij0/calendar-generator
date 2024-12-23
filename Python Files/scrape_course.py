@@ -1,9 +1,5 @@
-from multiprocessing import connection
-from scipy.fftpack import sc_diff
 from seleniumbase import SB
 from bs4 import BeautifulSoup
-import mysql.connector
-from sympy import det 
 from database import *
 
 
@@ -21,17 +17,7 @@ All_Courses = [
 ]
 
 
-C_Eng_courses = ["ENGG*3450"
-                 #,"ENGG*1410"
-    # "MATH*1200", "ENGG*1100"
-    # "MATH*1210", "ENGG*1500", "ENGG*2400", "MATH*2270", "ENGG*2450",
-    # "MATH*2130", "ENGG*3240", "ENGG*3410", "ENGG*3450", "ENGG*3100",
-    # "PHYS*1010", "CIS*2520", "ENGG*2410", "ENGG*2100", "ENGG*3380",
-    # "STAT*2120", "ENGG*4450", "ENGG*3640", "CIS*3110", "CIS*3490",
-    # "ENGG*3210", "ENGG*4420", "ENGG*4540", "ENGG*4550", "ENGG*3390",
-    # "ENGG*4000", "COOP*1100", "PHYS*1130", "ENGG*1210", "CIS*2910",
-    # "HIST*1250", "ENGG*3050"
-]
+C_Eng_courses = [ "ENGG*3450"]
 
 
 def initialize_driver():
@@ -65,7 +51,9 @@ def scrape_course_sections(course_html):
         caption = table.find('caption', class_='offScreen')
         if caption:
             section_info['section_name'] = caption.get_text(strip=True)
-
+            section_info['course_type'] = caption.get_text(strip=True).split("*")[0]
+            section_info['course_code'] = caption.get_text(strip=True).split("*")[1]
+            section_info['section_number'] = caption.get_text(strip=True).split("*")[-1]
         seats_td = table.find('td', class_='search-seatscell')
         if seats_td:
             seat_info = seats_td.find('span', class_='search-seatsavailabletext')
@@ -106,77 +94,6 @@ def scrape_course_sections(course_html):
         
     return sections
 
-def add_section_to_db(course_data):
-    """
-    Add scraped course sections and their associated events to the database.
-    Matches the MySQL schema with specific field lengths and constraints.
-
-    Args:
-        course_data (dict): Dictionary with course codes as keys and lists of section info as values
-    """
-    connection, cursor = connect_to_database()
-    
-    try:
-        # Dictionary to store section_name to course_id mapping
-        section_id_map = {}
-        
-        # First, insert sections and store their IDs
-        for course_code, sections in course_data.items():
-            if sections:
-                for section in sections:
-                    # Truncate fields to match VARCHAR lengths if necessary
-                    section_name = section.get('section_name', '')[:50]  # VARCHAR(50)
-                    seats = section.get('seats', '0/0')[:50]  # VARCHAR(50)
-                    instructors = ', '.join(section.get('instructors', ['Unknown']))[:255]  # VARCHAR(255)
-                    
-                    # Insert single section
-                    query1 = """
-                        INSERT INTO courses (section_name, seats, instructor)
-                        VALUES (%s, %s, %s)
-                    """
-                    cursor.execute(query1, (section_name, seats, instructors))
-                    
-                    # Get the last inserted ID
-                    course_id = cursor.lastrowid
-                    section_id_map[section_name] = course_id
-                    
-                    # Insert associated events using the course_id
-                    meeting_details = section.get('meeting_details', [])
-                    for meeting in meeting_details:
-                        # Handle times - join if it's a list and truncate to field length
-                        times = (', '.join(meeting.get('times', [])) if isinstance(meeting.get('times'), list) 
-                               else str(meeting.get('times', '')))[:255]
-                        
-                        # Handle location - take first location if it's a list, otherwise use as is
-                        locations = meeting.get('locations', [])
-                        location = (locations[0] if isinstance(locations, list) and locations 
-                                  else str(locations))[:255]
-                        
-                        event_type = str(meeting.get('event_type', 'Unknown'))[:50]  # VARCHAR(50)
-                        
-                        query2 = """
-                            INSERT INTO events (course_id, event_type, times, location)
-                            VALUES (%s, %s, %s, %s)
-                        """
-                        cursor.execute(query2, (course_id, event_type, times, location))
-                
-                print(f"Processed {len(sections)} sections for course: {course_code}")
-            else:
-                print(f"No sections found for course: {course_code}")
-
-        connection.commit()
-        print("Successfully added all sections and events to database")
-
-    except Exception as e:
-        print(f"An error occurred while adding data to the database: {e}")
-        print(f"Error details: {str(e)}")
-        connection.rollback()
-
-    finally:
-        cursor.close()
-        connection.close()
-
-    return section_id_map
 
 def scrape_multiple_courses(list_of_courses):
     """
@@ -208,7 +125,8 @@ def scrape_multiple_courses(list_of_courses):
     
     return scraped_courses
 
+
+
 if __name__ == '__main__':
     scraped = scrape_multiple_courses(C_Eng_courses)
-    add_section_to_db(scraped)  # Pass the scraped data, not the course list
-
+    add_cleaned_section_to_db(scraped)
