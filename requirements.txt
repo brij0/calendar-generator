@@ -3,5 +3,3 @@ PyMuPDF==1.22.0       # For working with PDFs (Fitz is part of PyMuPDF)       # 
 requests==2.31.0      # For making API requests
 langchain-groq==0.0.1  # For LLaMA integration via LangChain
 langchain-core==0.0.1  # Core LangChain functionality
-
-#bvksdviu

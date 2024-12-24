@@ -23,9 +23,9 @@ def connect_to_database():
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_NAME")
         )
-        cursor = connection.cursor()
+        
         print("Connected to the database successfully!")
-        return connection, cursor
+        return connection
     except mysql.connector.Error as err:
         print(f"Error: {err}")
         return None

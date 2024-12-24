@@ -8,8 +8,6 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- truncate table events;
 -- SET SQL_SAFE_UPDATES = 0;
 
-
-
 use course_details;
 CREATE TABLE courses (
     course_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -29,4 +27,16 @@ CREATE TABLE events (
     location VARCHAR(255),
     FOREIGN KEY (course_id) REFERENCES courses(course_id)
 );
+
+CREATE TABLE course_dropdown (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_type VARCHAR(20),
+    course_code VARCHAR(20),
+    section_number VARCHAR(20)
+);
+select * from course_dropdown;
+
+-- INSERT INTO course_dropdown (course_type, course_code, section_number)
+-- SELECT DISTINCT course_type, course_code, section_number
+-- FROM courses;
 
