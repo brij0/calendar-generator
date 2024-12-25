@@ -1,117 +1,262 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Course Selection</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-            padding: 20px;
+{% extends "base.html" %}
+
+{% block title %}Course Selection - CourseScheduler{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Top bar fixes */
+    .navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1050;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+        padding-top: 70px; /* Adjust based on navbar height */
+    }
+
+    /* Hero section */
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 4rem 0;
+        margin: 0 -2rem 2rem -2rem;
+        border-radius: 0 0 20px 20px;
+        text-align: center;
+    }
+
+    /* Course selector box */
+    .course-selector {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin-top: 0;
+    }
+
+    .number-input {
+        max-width: 200px;
+        margin: 0 auto;
+    }
+
+    /* Dropdown styling */
+    .dropdown-row {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: slideIn 0.5s forwards;
+        margin-bottom: 1px;
+    }
+
+    @keyframes slideIn {
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
-        .dropdown-row {
-            margin-bottom: 20px;
-        }
-    </style>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-</head>
-<body>
-    <div class="container">
-        <h1 class="text-center">Course Selection</h1>
-        <div class="text-center mb-4">
-            <label for="num-courses">How many courses are you taking?</label>
-            <input type="number" id="num-courses" class="form-control d-inline w-25" min="1" placeholder="Enter number">
-            <button id="generate-rows" class="btn btn-success">Generate</button>
+    }
+
+    .form-control {
+        border-radius: 10px;
+        border: 2px solid #e1e8ed;
+        padding: 0.75rem;
+        text-align: center;
+        text-align-last: center; /* Modern browsers */
+        transition: all 0.3s;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+    }
+
+    option {
+        text-align: center;
+    }
+
+    /* Button styling */
+    .btn {
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s;
+    }
+
+    .btn-success {
+        background: var(--accent-color);
+        border: none;
+    }
+
+    .btn-success:hover {
+        background: #27ae60;
+        transform: translateY(-2px);
+    }
+
+    /* Features section */
+    .features {
+        margin-top: 4rem;
+    }
+
+    .feature-card {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .feature-icon {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<div class="hero-section text-center animate-fade-in">
+    <h1 class="display-4 mb-3">Welcome to CourseScheduler</h1>
+    <p class="lead mb-0">Plan your semester with ease using our intuitive course selection tool</p>
+</div>
+
+<div class="course-selector animate-fade-in">
+    <h2 class="text-center mb-4">Course Selection</h2>
+    <div class="text-center mb-4">
+        <label for="num-courses" class="h5">How many courses are you taking?</label>
+        <div class="number-input mx-auto">
+            <input type="number" id="num-courses" class="form-control" min="1" placeholder="Enter number">
         </div>
-        <form id="course-form" action="/search" method="post">
-            <div id="course-rows"></div>
-            <div class="text-center">
-                <button type="submit" class="btn btn-primary">Submit</button>
-            </div>
-        </form>
+        <button id="generate-rows" class="btn btn-success mt-3">
+            <i class="fas fa-plus-circle mr-2"></i>Generate
+        </button>
     </div>
+    <form id="course-form" action="/search" method="post">
+        <div id="course-rows"></div>
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search mr-2"></i>Find Schedules
+            </button>
+        </div>
+    </form>
+</div>
 
-    <script>
-        $(document).ready(function () {
-            $("#generate-rows").click(function () {
-                const numCourses = parseInt($("#num-courses").val());
-                if (isNaN(numCourses) || numCourses <= 0) {
-                    alert("Please enter a valid number of courses.");
-                    return;
-                }
+<div class="features">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="feature-card card">
+                <div class="feature-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3>Time-Saving</h3>
+                <p>Quick and easy course selection process that saves you valuable time</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card card">
+                <div class="feature-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <h3>Conflict-Free</h3>
+                <p>Automatically checks for schedule conflicts and suggests alternatives</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card card">
+                <div class="feature-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <h3>Mobile-Friendly</h3>
+                <p>Access your schedule from any device, anywhere, anytime</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-                const courseRows = $("#course-rows");
-                courseRows.empty();
+{% block extra_js %}
+<script>
+    $(document).ready(function () {
+        let animationDelay = 100;
 
-                for (let i = 0; i < numCourses; i++) {
-                    const rowHtml = `
-                        <div class="row dropdown-row">
-                            <div class="col-md-4">
-                                <select class="form-control course-type" name="course_type_${i}" required>
-                                    <option value="">Select Course Type</option>
-                                    {% for course_type in course_types %}
-                                    <option value="{{ course_type }}">{{ course_type }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <select class="form-control course-code" name="course_code_${i}" required>
-                                    <option value="">Select Course Code</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <select class="form-control section-number" name="section_number_${i}" required>
-                                    <option value="">Select Section Number</option>
-                                </select>
-                            </div>
-                        </div>`;
-                    courseRows.append(rowHtml);
-                }
-            });
+        $("#generate-rows").click(function () {
+            const numCourses = parseInt($("#num-courses").val());
+            if (isNaN(numCourses) || numCourses <= 0) {
+                alert("Please enter a valid number of courses.");
+                return;
+            }
 
-            $(document).on("change", ".course-type", function () {
-                let row = $(this).closest('.dropdown-row').index();
-                let courseType = $(this).val();
+            const courseRows = $("#course-rows");
+            courseRows.empty();
 
-                if (courseType) {
-                    $.ajax({
-                        url: "/get_course_codes",
-                        type: "POST",
-                        contentType: "application/json",
-                        data: JSON.stringify({ course_type: courseType }),
-                        success: function (data) {
-                            let courseCodeDropdown = $(`select[name="course_code_${row}"]`);
-                            courseCodeDropdown.empty().append('<option value="">Select Course Code</option>');
-                            data.forEach(code => {
-                                courseCodeDropdown.append(`<option value="${code}">${code}</option>`);
-                            });
-                        }
-                    });
-                }
-            });
-
-            $(document).on("change", ".course-code", function () {
-                let row = $(this).closest('.dropdown-row').index();
-                let courseCode = $(this).val();
-
-                if (courseCode) {
-                    $.ajax({
-                        url: "/get_section_numbers",
-                        type: "POST",
-                        contentType: "application/json",
-                        data: JSON.stringify({ course_code: courseCode }),
-                        success: function (data) {
-                            let sectionNumberDropdown = $(`select[name="section_number_${row}"]`);
-                            sectionNumberDropdown.empty().append('<option value="">Select Section Number</option>');
-                            data.forEach(section => {
-                                sectionNumberDropdown.append(`<option value="${section}">${section}</option>`);
-                            });
-                        }
-                    });
-                }
-            });
+            for (let i = 0; i < numCourses; i++) {
+                const rowHtml = `
+                    <div class="row dropdown-row mb-4" style="animation-delay: ${i * animationDelay}ms">
+                        <div class="col-md-4">
+                            <select class="form-control course-type" name="course_type_${i}" required>
+                                <option value="">Select Course Type</option>
+                                {% for course_type in course_types %}
+                                <option value="{{ course_type }}">{{ course_type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-control course-code" name="course_code_${i}" required>
+                                <option value="">Select Course Code</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-control section-number" name="section_number_${i}" required>
+                                <option value="">Select Section Number</option>
+                            </select>
+                        </div>
+                    </div>`;
+                courseRows.append(rowHtml);
+            }
         });
-    </script>
-</body>
-</html>
+
+        $(document).on("change", ".course-type", function () {
+            let row = $(this).closest('.dropdown-row').index();
+            let courseType = $(this).val();
+
+            if (courseType) {
+                $.ajax({
+                    url: "/get_course_codes",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ course_type: courseType }),
+                    success: function (data) {
+                        let courseCodeDropdown = $(`select[name="course_code_${row}"]`);
+                        courseCodeDropdown.empty().append('<option value="">Select Course Code</option>');
+                        data.forEach(code => {
+                            courseCodeDropdown.append(`<option value="${code}">${code}</option>`);
+                        });
+                    }
+                });
+            }
+        });
+
+        $(document).on("change", ".course-code", function () {
+            let row = $(this).closest('.dropdown-row').index();
+            let courseCode = $(this).val();
+
+            if (courseCode) {
+                $.ajax({
+                    url: "/get_section_numbers",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ course_code: courseCode }),
+                    success: function (data) {
+                        let sectionNumberDropdown = $(`select[name="section_number_${row}"]`);
+                        sectionNumberDropdown.empty().append('<option value="">Select Section Number</option>');
+                        data.forEach(section => {
+                            sectionNumberDropdown.append(`<option value="${section}">${section}</option>`);
+                        });
+                    }
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

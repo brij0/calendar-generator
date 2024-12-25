@@ -1,78 +1,199 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Extracted Events</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-            color: #333;
-        }
-        .container {
-            margin-top: 50px;
-            padding: 20px;
-            background: #fff;
-            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-        }
-        h1, h2, h3 {
-            color: #007bff;
-            text-align: center;
-        }
-        h3 {
-            color: #6c757d;
-            font-size: 1.2rem;
-            margin-top: 15px;
-        }
-        .section-divider {
-            margin: 20px 0;
-            border-top: 1px solid #dee2e6;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Extracted Events</h1>
-        
-        {% if events %}
-            {% for course_code, sections in events.items() %}
-                <h2 class="mt-4">{{ course_code }}</h2>
-                {% for section_code, section_events in sections.items() %}
-                    <h3>Section: {{ section_code }}</h3>
-                    <table class="table table-bordered table-hover mt-3">
-                        <thead class="thead-dark">
-                            <tr>
-                                <th scope="col">Event Type</th>
-                                <th scope="col">Times</th>
-                                <th scope="col">Location</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for event in section_events %}
-                                <tr>
-                                    <td>{{ event.event_type }}</td>
-                                    <td>{{ event.times }}</td>
-                                    <td>{{ event.location }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% if not loop.last %}
-                        <div class="section-divider"></div>
-                    {% endif %}
-                {% endfor %}
-            {% endfor %}
-        {% else %}
-            <div class="alert alert-warning text-center mt-4">
-                No courses selected or no events returned.
+{% extends "base.html" %}
+
+{% block title %}Schedule Results - CourseScheduler{% endblock %}
+
+{% block extra_css %}
+<style>
+    .results-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 0;
+        margin: -2rem -2rem 2rem -2rem;
+        border-radius: 0 0 20px 20px;
+        text-align: center;
+    }
+
+    .course-card {
+        margin-bottom: 2rem;
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .course-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .course-header {
+        background: var(--primary-color);
+        color: white;
+        padding: 1rem;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .section-header {
+        background: var(--secondary-color);
+        padding: 0.5rem 1rem;
+        margin: -1px -1px 1rem -1px;
+        border-bottom: 2px solid #e1e8ed;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background: #f8f9fa;
+        border-top: none;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        color: #495057;
+    }
+
+    .table td {
+        vertical-align: middle;
+        padding: 1rem;
+        border-color: #e1e8ed;
+    }
+
+    .event-type {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .location {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .times {
+        color: #2c3e50;
+        font-size: 0.9rem;
+    }
+
+    .no-events {
+        background: #f8f9fa;
+        padding: 2rem;
+        text-align: center;
+        border-radius: 10px;
+        color: #666;
+    }
+
+    .action-buttons {
+        margin-top: 2rem;
+        text-align: center;
+    }
+
+    .btn-back {
+        background: var(--secondary-color);
+        color: var(--text-color);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        transition: all 0.3s;
+    }
+
+    .btn-back:hover {
+        background: #e1e8ed;
+        transform: translateY(-2px);
+    }
+
+    .export-button {
+        margin-left: 1rem;
+        background: var(--accent-color);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        transition: all 0.3s;
+    }
+
+    .export-button:hover {
+        background: #27ae60;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="results-header animate-fade-in">
+    <h1 class="display-4">Your Course Schedule</h1>
+    <p class="lead">Here's your personalized course schedule</p>
+</div>
+
+<div class="schedule-container animate-fade-in">
+    {% if events %}
+        {% for course_code, sections in events.items() %}
+            <div class="course-card card">
+                <div class="course-header">
+                    <h2 class="h4 mb-0">{{ course_code }}</h2>
+                </div>
+                <div class="card-body">
+                    {% for section_code, section_events in sections.items() %}
+                        <div class="section-content">
+                            <div class="section-header">
+                                <h3 class="h5 mb-0">Section: {{ section_code }}</h3>
+                            </div>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Event Type</th>
+                                        <th>Times</th>
+                                        <th>Location</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for event in section_events %}
+                                        <tr>
+                                            <td class="event-type">{{ event.event_type }}</td>
+                                            <td class="times">{{ event.times }}</td>
+                                            <td class="location">{{ event.location }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
-        {% endif %}
-        
-        <div class="text-center mt-4">
-            <a href="/" class="btn btn-secondary">Search Another Course</a>
+        {% endfor %}
+    {% else %}
+        <div class="no-events">
+            <i class="fas fa-calendar-times fa-3x mb-3"></i>
+            <h3>No Events Found</h3>
+            <p>Please select at least one course to view the schedule.</p>
         </div>
+    {% endif %}
+
+    <div class="action-buttons">
+        <a href="/" class="btn btn-back">
+            <i class="fas fa-arrow-left mr-2"></i>Search Another Course
+        </a>
+        <button class="btn export-button">
+            <i class="fas fa-download mr-2"></i>Export Schedule
+        </button>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Add smooth scrolling to all buttons
+        $(".btn").on('click', function() {
+            $(this).addClass('animate__animated animate__pulse');
+            setTimeout(() => {
+                $(this).removeClass('animate__animated animate__pulse');
+            }, 1000);
+        });
+
+        // Export button functionality (you can implement this based on your needs)
+        $(".export-button").click(function() {
+            alert("Export functionality coming soon!");
+        });
+    });
+</script>
+{% endblock %}
