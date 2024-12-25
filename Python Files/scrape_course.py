@@ -13,7 +13,8 @@ All_Courses = [
     "ENGG*3250", "ENGG*3260", "ENGG*3280", "ENGG*3340", "ENGG*3570", "ENGG*3650",
     "ENGG*4020", "ENGG*4040", "ENGG*4220", "ENGG*4240", "ENGG*4360", "ENGG*4370",
     "ENGG*4390", "ENGG*4400", "ENGG*4430", "ENGG*4460", "ENGG*4680", "ENGG*4770",
-    "ENGG*2100", "ENGG*4380", "ENGG*4110", "ENGG*4130", "ENGG*4160", "ENGG*4170"]
+    "ENGG*2100", "ENGG*4380", "ENGG*4110", "ENGG*4130", "ENGG*4160", "ENGG*4170"
+    ]
 
 C_Eng_courses =["CHEM*1040", "ENGG*1100", "ENGG*1410", "MATH*1200",
                 "ENGG*1420", "MATH*1210", "ENGG*1500", "ENGG*2400", 
@@ -25,6 +26,7 @@ C_Eng_courses =["CHEM*1040", "ENGG*1100", "ENGG*1410", "MATH*1200",
                 "ENGG*4550", "ENGG*3390", "ENGG*4000", "COOP*1100", 
                 "PHYS*1130", "ENGG*1210",  "CIS*2910", "HIST*1250", 
                 "ENGG*3050"]
+test = ["ENGG*3700"]
 
 def initialize_driver():
     """
@@ -132,5 +134,5 @@ def scrape_multiple_courses(list_of_courses):
 
 
 if __name__ == '__main__':
-    scraped = scrape_multiple_courses(C_Eng_courses)
+    scraped = scrape_multiple_courses(test)
     add_cleaned_section_to_db(scraped)

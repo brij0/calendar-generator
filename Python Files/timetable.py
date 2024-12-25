@@ -1,11 +1,12 @@
 from datetime import datetime
+from math import e
 from langchain_groq import ChatGroq
 import fitz
 import os
 from dotenv import load_dotenv
 import re
 from datetime import datetime
-import time
+from scrape_course import *
 
 # ---------------------------------------------------------
 # Load API key and setup LLM for content processing
@@ -65,53 +66,45 @@ def extract_and_clean_pdf_text(pdf_path):
 
 def generate_llm_prompt(course_details, student_details):
     prompt_template = """
-    Task: Extract academic events for the given course section and format them in the following structure:
-
-    Format for each event:
-    1. Event Type: (e.g., Lecture, Lab, Midterm Exam, Final Exam, Assignment, Lab Report).
-    2. Date: For one-time events (e.g., exams), provide the exact date.
-    3. Days: For recurring events (e.g., lectures, labs), specify the days (e.g., Monday, Wednesday, Friday).
-    4. Time: Provide the start and end time of the event. If the time is not provided, use 'TBA' or 'N/A'.
-    5. Location: Provide the location. If the location is not provided, use 'TBA'.
-    7. Weightage: For graded events (e.g., assignments, exams), provide the weightage of that event in absolute terms not relative. If not applicable, use 0.
-
-     Example for FORMATTING ONLY:
-    1. Event Type: Lecture   
-       Date: N/A  
-       Days: Monday, Wednesday, Friday  
-       Time: 12:30 PM - 1:20 PM  
-       Location: Guelph, ROZH102  
-       Description: ENGG*3450*0101 Lecture by Abou El Nasr, M  
-       Weightage: Null  
-
-    2. Event Type: Lab 1  
-       Date: 2024-09-30  
-       Days: Monday  
-       Time: 3:30 PM - 5:20 PM  
-       Location: Guelph, RICH1504  
-       Description: ENGG*3450*0101 Lab  
-       Weightage: 7.5%  
-
-    3. Event Type: Lab 2 
-       Date: 2024-10-28  
-       Days: Monday  
-       Time: 3:30 PM - 5:20 PM  
-       Location: Guelph, RICH1504  
-       Description: ENGG*3450*0101 Lab  
-       Weightage: 7.5% 
-
+    Extract only the following types of academic events from the course outline:
+    1. For lab sessions:
+       - Use dates from course outline
+       - Time and day MUST match student's scheduled lab slot from: {student_details}
+       - Do not invent or modify lab times
     
-    Details for this task:
-    Student Section: {student_details}
+    2. Midterm and Final exams
+    3. Course-specific assignments and projects
+    
+    Exclude:
+    - Generic recurring lectures
+    - University-wide holidays or breaks
+    - Administrative dates
+    - Make-up classes
+    
+    4. Format each event:
+       Event Type: [LabN/Midterm/FinalExam]
+       Date: [YYYY-MM-DD]
+       Days: [Use student's scheduled day for the event]
+       Time: [Use student's scheduled time for the event]
+       Location: [Building,Room]
+       Description: [Brief description]
+       Weightage: [Number]%
 
     Course Information:
     {course_details}
 
-    Extract and structure all events in the specified format. 
-    NO PREAMBLE
+    Section Details:
+    {student_details}
+
+    Return only events that have confirmed dates and are specific to this course section. Do not return empty events
     """
-    prompt = prompt_template.format(student_details=student_details, course_details=course_details)
-    return invoke_llm(prompt)
+    
+    # Extract section number from student_details
+    # return None
+    return invoke_llm(prompt_template.format(
+        course_details=course_details,
+        student_details=student_details
+    ))
 
 
 
@@ -209,36 +202,12 @@ def process_pdfs_make_event_list(pdf_input, student_details):
     return event_list
 
 
-
 # ---------------------------------------------------------
 # Main function to execute the process
 # ---------------------------------------------------------
 if __name__ == "__main__": 
-    start_time = time.time() 
-    Student_Details = """
-    Section Name: ENGG*3390*0201
-    Instructors: Aboagye, S
-
-    Meeting Details:
-    1. Event Type: Lecture (LEC)
-    - Days: Tuesday and Thursday
-    - Times: 10:00 AM - 11:20 AM
-    - Dates: 9/5/2024 - 12/13/2024
-    - Location: Guelph, MCKN120
-
-    2. Event Type: Labs
-    - Days: Friday
-    - Times: 11:30 AM - 1:20 PM
-    - Dates: 9/5/2024 - 12/13/2024
-    - Location: Guelph, THRN2307
-
-    3. Event Type: Exam
-    - Day: Wednesday
-    - Times: 7:00 PM - 9:00 PM
-    - Dates: 12/4/2024
-    - Location: Guelph, ROZH101
-    """ 
-
-    event_list = process_pdfs_make_event_list("Sample Course Outlines/ENGG_3390.pdf", Student_Details)
-    for event in event_list:
-        print(event, "\n")
+    Student_Details = extract_section_info("HIST", "1250", "01")
+    print(Student_Details)
+    event_list = process_pdfs_make_event_list("D:/University/All Projects/Time Table project/Sample Course Outlines/HIST_1250.pdf", Student_Details)
+    for events in event_list:
+        print(f"events in the list are : {events}")

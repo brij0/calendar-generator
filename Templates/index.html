@@ -19,29 +19,13 @@
 <body>
     <div class="container">
         <h1 class="text-center">Course Selection</h1>
-        <form action="/search" method="post">
-            {% for i in range(6) %}
-            <div class="row dropdown-row">
-                <div class="col-md-4">
-                    <select class="form-control course-type" name="course_type_{{ i }}" data-row="{{ i }}">
-                        <option value="">Select Course Type</option>
-                        {% for course_type in course_types %}
-                        <option value="{{ course_type }}">{{ course_type }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <select class="form-control course-code" name="course_code_{{ i }}" data-row="{{ i }}">
-                        <option value="">Select Course Code</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <select class="form-control section-number" name="section_number_{{ i }}" data-row="{{ i }}">
-                        <option value="">Select Section Number</option>
-                    </select>
-                </div>
-            </div>
-            {% endfor %}
+        <div class="text-center mb-4">
+            <label for="num-courses">How many courses are you taking?</label>
+            <input type="number" id="num-courses" class="form-control d-inline w-25" min="1" placeholder="Enter number">
+            <button id="generate-rows" class="btn btn-success">Generate</button>
+        </div>
+        <form id="course-form" action="/search" method="post">
+            <div id="course-rows"></div>
             <div class="text-center">
                 <button type="submit" class="btn btn-primary">Submit</button>
             </div>
@@ -50,9 +34,44 @@
 
     <script>
         $(document).ready(function () {
-            // Fetch course codes based on course type selection
-            $(".course-type").change(function () {
-                let row = $(this).data("row");
+            $("#generate-rows").click(function () {
+                const numCourses = parseInt($("#num-courses").val());
+                if (isNaN(numCourses) || numCourses <= 0) {
+                    alert("Please enter a valid number of courses.");
+                    return;
+                }
+
+                const courseRows = $("#course-rows");
+                courseRows.empty();
+
+                for (let i = 0; i < numCourses; i++) {
+                    const rowHtml = `
+                        <div class="row dropdown-row">
+                            <div class="col-md-4">
+                                <select class="form-control course-type" name="course_type_${i}" required>
+                                    <option value="">Select Course Type</option>
+                                    {% for course_type in course_types %}
+                                    <option value="{{ course_type }}">{{ course_type }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-control course-code" name="course_code_${i}" required>
+                                    <option value="">Select Course Code</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-control section-number" name="section_number_${i}" required>
+                                    <option value="">Select Section Number</option>
+                                </select>
+                            </div>
+                        </div>`;
+                    courseRows.append(rowHtml);
+                }
+            });
+
+            $(document).on("change", ".course-type", function () {
+                let row = $(this).closest('.dropdown-row').index();
                 let courseType = $(this).val();
 
                 if (courseType) {
@@ -72,9 +91,8 @@
                 }
             });
 
-            // Fetch section numbers based on course code selection
-            $(".course-code").change(function () {
-                let row = $(this).data("row");
+            $(document).on("change", ".course-code", function () {
+                let row = $(this).closest('.dropdown-row').index();
                 let courseCode = $(this).val();
 
                 if (courseCode) {

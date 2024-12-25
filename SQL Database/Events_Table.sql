@@ -36,7 +36,4 @@ CREATE TABLE course_dropdown (
 );
 select * from course_dropdown;
 
--- INSERT INTO course_dropdown (course_type, course_code, section_number)
--- SELECT DISTINCT course_type, course_code, section_number
--- FROM courses;
-
+select * from courses where course_code = 1250;

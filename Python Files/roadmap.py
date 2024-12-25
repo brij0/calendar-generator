@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
-from langchain_groq import ChatGroq  # type: ignore
-from langchain_core.prompts import PromptTemplate  # type: ignore
-import fitz  # type: ignore
-from groq import Groq  # type: ignore
+from langchain_groq import ChatGroq
+from langchain_core.prompts import PromptTemplate
+import fitz 
+from groq import Groq 
 import os
 import io 
 from PIL import Image
@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import re
 from datetime import datetime
 import time
-import tiktoken # type: ignore
+import tiktoken
 import base64
 
 # from ollama import OllamaModel  # type: ignore

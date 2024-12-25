@@ -1,3 +1,4 @@
+from sqlite3 import Cursor
 import mysql.connector
 import os
 from dotenv import load_dotenv
@@ -8,14 +9,12 @@ import re
 def connect_to_database():
     """
     Connect to the MySQL database using the credentials from environment variables.
-
     Returns:
         connection: A connection object to the MySQL database.
         cursor: A cursor object to execute queries.
     """
     # Load environment variables
     load_dotenv()
-
     try:
         connection = mysql.connector.connect(
             host=os.getenv("DB_HOST"),
@@ -23,12 +22,13 @@ def connect_to_database():
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_NAME")
         )
-        
+        cursor = connection.cursor()
         print("Connected to the database successfully!")
-        return connection
+        return connection, cursor
     except mysql.connector.Error as err:
         print(f"Error: {err}")
-        return None
+        return None, None
+    
 def add_cleaned_section_to_db(course_data):
     """
     Clean and add scraped course sections and their associated events to the database.
@@ -44,7 +44,7 @@ def add_cleaned_section_to_db(course_data):
         "W": "Wednesday",
         "Th": "Thursday",
         "F": "Friday",
-        "S": "Saturday",
+        "Sa": "Saturday",
         "Su": "Sunday"
     }
 
@@ -139,42 +139,34 @@ def extract_section_info(school, course_code, section_number):
         section_number (str): Section number (e.g., 0201).
 
     Returns:
-        list: A list of dictionaries containing event_type, times, and location for the section.
+        dict: A dictionary with the course code as the key and a list of dictionaries containing event_type, times, and location for the section as the value.
     """
-    # Combine the input values into the full section name
-    course_code = school + "*" + course_code + "*" + section_number
-    # Connect to the database
+    full_course_code = f"{school}*{course_code}*{section_number}"
     connection, cursor = connect_to_database()
-
+    
     try:
-        # Query to extract event information
         query = """
-            SELECT event_type, times, location
-            FROM events
-            WHERE course_id = (
-                SELECT course_id
-                FROM courses
-                WHERE section_name = %s
-            )
+            SELECT e.event_type, e.times, e.location
+            FROM events e
+            JOIN courses c ON e.course_id = c.course_id
+            WHERE c.section_name = %s
         """
-        
-        # Execute the query with the section_name parameter as a tuple
-        cursor.execute(query, (course_code,))  # Wrap course_code in a tuple
-        
-        # Fetch all results
+        cursor.execute(query, (full_course_code,))
         rows = cursor.fetchall()
-
-        # Convert the results to a list of dictionaries
-        column_names = [desc[0] for desc in cursor.description]
-        results = [dict(zip(column_names, row)) for row in rows]
-
-        return results
-
+        section_info = {
+            full_course_code: [
+                {
+                    'event_type': row[0],
+                    'times': row[1],
+                    'location': row[2]
+                } for row in rows
+            ]
+        }
+        
+        return section_info
     except Exception as e:
-        print(f"An error occurred while extracting section info: {e}")
-        return []
-
+        print(f"Database error: {e}")
+        return {full_course_code: []}
     finally:
-        # Close the cursor and connection
         cursor.close()
         connection.close()
