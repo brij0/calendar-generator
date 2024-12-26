@@ -1,5 +1,4 @@
 from flask import Flask, request, render_template, jsonify
-import os
 from database import *
 
 app = Flask(__name__, template_folder='D:/University/All Projects/Time Table project/templates')
@@ -7,7 +6,7 @@ app = Flask(__name__, template_folder='D:/University/All Projects/Time Table pro
 @app.route('/')
 def index():
     connection, cursor = connect_to_database()
-    cursor.execute("SELECT DISTINCT course_type FROM courses")
+    cursor.execute("SELECT DISTINCT course_type FROM courses ORDER BY course_type ASC")
     course_types = [row[0] for row in cursor.fetchall()]
     return render_template('index.html', course_types=course_types)
 
@@ -15,17 +14,45 @@ def index():
 def get_course_codes():
     course_type = request.json.get('course_type')
     connection, cursor = connect_to_database()
-    cursor.execute("SELECT DISTINCT course_code FROM courses WHERE course_type = %s", (course_type,))
+    cursor.execute("SELECT DISTINCT course_code FROM courses WHERE course_type = %s ORDER BY course_code ASC", (course_type,))
     course_codes = [row[0] for row in cursor.fetchall()]
     return jsonify(course_codes)
 
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
 @app.route('/get_section_numbers', methods=['POST'])
 def get_section_numbers():
-    course_code = request.json.get('course_code')
+    # Extract data from the request
+    course_type = request.json.get('course_type')  # e.g., "ENGG"
+    course_code = request.json.get('course_code')  # e.g., "3450"
+
+    # Validate input
+    if not course_type or not course_code:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    # Query the database to fetch section numbers
     connection, cursor = connect_to_database()
-    cursor.execute("SELECT DISTINCT section_number FROM courses WHERE course_code = %s", (course_code,))
-    section_numbers = [row[0] for row in cursor.fetchall()]
-    return jsonify(section_numbers)
+    try:
+        query = """
+            SELECT DISTINCT section_number
+            FROM courses
+            WHERE course_type = %s AND course_code = %s
+        """
+        cursor.execute(query, (course_type, course_code))
+        rows = cursor.fetchall()
+
+        # Format section numbers into a list
+        section_numbers = [row[0] for row in rows]
+        return jsonify(section_numbers)
+    except Exception as e:
+        print(f"Error fetching section numbers: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
 
 @app.route('/search', methods=['POST'])
 def search_course():

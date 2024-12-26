@@ -21,52 +21,41 @@
             color: var(--text-color);
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
+            padding-top: 70px; /* Adjust based on navbar height */
+            margin: 0;
         }
 
         .navbar {
-            background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-            padding: 1rem 2rem;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             z-index: 1050;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease-in-out;
+            padding: 1.2rem 2rem; /* Reduced initial padding */
+            height: 70px; /* Fixed height */
+            display: flex;
+            align-items: center;
         }
 
         .navbar.shrink {
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 1rem; /* Smaller padding when shrunk */
+            background: rgba(255, 255, 255, 1);
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            height: 50px; /* Smaller height when shrunk */
         }
-
 
         .navbar-brand {
             font-weight: bold;
             color: var(--primary-color) !important;
-            font-size: 1.5rem;
+            font-size: 1.3rem; /* Slightly smaller initial size */
+            transition: font-size 0.3s ease-in-out;
         }
 
-        .nav-link {
-            color: var(--text-color) !important;
-            margin: 0 10px;
-            position: relative;
-            transition: var(--transition-speed);
-        }
-
-        .nav-link:after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 2px;
-            bottom: 0;
-            left: 0;
-            background-color: var(--primary-color);
-            transition: var(--transition-speed);
-        }
-
-        .nav-link:hover:after {
-            width: 100%;
+        .navbar.shrink .navbar-brand {
+            font-size: 1.1rem; /* Even smaller when shrunk */
         }
 
         .container {
@@ -98,6 +87,16 @@
             animation: fadeIn 1s ease-in;
         }
 
+        .form-control {
+            text-align: left; /* Align dropdown text to the left */
+            padding: 0.75rem 1rem; /* Better padding for dropdown content */
+        }
+
+        option {
+            text-align: left;
+            padding: 0.5rem 1rem; /* Ensure consistent spacing for options */
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -106,8 +105,8 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
-        <div class="container">
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container d-flex align-items-center">
             <a class="navbar-brand" href="/">
                 <i class="fas fa-calendar-alt mr-2"></i>CourseScheduler
             </a>
@@ -152,14 +151,14 @@
                 <div class="col-md-4">
                     <h5>Contact Us</h5>
                     <p>
-                        <i class="fas fa-envelope mr-2"></i>support@coursescheduler.com<br>
-                        <i class="fas fa-phone mr-2"></i>(555) 123-4567
+                        <i class="fas fa-envelope mr-2"></i>bthakrar@uoguelph.ca<br>
+                        <i class="fas fa-phone mr-2"></i>+1 (123) 456-7890
                     </p>
                 </div>
             </div>
             <div class="row mt-3">
                 <div class="col text-center">
-                    <p class="mb-0">© 2024 CourseScheduler. All rights reserved.</p>
+                    <p class="mb-0">© 2024 bthakrar. All rights reserved.</p>
                 </div>
             </div>
         </div>
@@ -169,5 +168,15 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     {% block extra_js %}{% endblock %}
+    <script>
+        document.addEventListener("scroll", function () {
+            const navbar = document.querySelector(".navbar");
+            if (window.scrollY > 50) {
+                navbar.classList.add("shrink");
+            } else {
+                navbar.classList.remove("shrink");
+            }
+        });
+    </script>
 </body>
 </html>

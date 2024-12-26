@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}About - CourseScheduler{% endblock %}
+
+{% block extra_css %}
+<style>
+    .about-section {
+        padding: 4rem 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-align: center;
+    }
+
+    .about-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin: -2rem 2rem 4rem 2rem;
+    }
+
+    .about-card h1 {
+        color: #495057;
+    }
+
+    .btn-github {
+        background: #333;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        transition: all 0.3s;
+        margin-top: 1rem;
+    }
+
+    .btn-github:hover {
+        background: #555;
+        transform: translateY(-2px);
+    }
+
+    .skills, .projects, .contact {
+        margin-top: 3rem;
+    }
+
+    .projects ul {
+        padding-left: 0;
+        list-style: none;
+    }
+
+    .projects ul li {
+        margin-bottom: 1rem;
+    }
+
+    .projects ul li i {
+        color: #764ba2;
+        margin-right: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="about-section animate-fade-in">
+    <h1>About Me</h1>
+    <p class="lead">Hi, I'm Brijesh Thakrar - A Versatile Developer with a Passion for Data-Driven Solutions and Cutting-Edge Technologies</p>
+</div>
+
+<div class="container about-card">
+    <div class="row">
+        <div class="col-md-6">
+            <h2>About Me</h2>
+            <p>
+                I'm a developer working on innovative projects like a Price Comparison App and a Parking Zone Monitoring System. I enjoy leveraging technology to solve real-world problems. When I'm not coding, I'm learning new skills in deep learning and web development.
+            </p>
+            <a href="https://github.com/brij0" target="_blank" class="btn btn-github">
+                <i class="fab fa-github"></i> Visit My GitHub
+            </a>
+        </div>
+        <div class="col-md-6">
+            <h2>Contact Me</h2>
+            <p><strong>Email:</strong> <a href="mailto:bthakrar@uoguelph.ca">bthakrar@uoguelph.ca</a></p>
+            <p><strong>Fun Fact:</strong> I'm not on social media, but I'm always learning!</p>
+        </div>
+    </div>
+
+    <div class="skills">
+        <h2>Technical Skills</h2>
+        <p><strong>Languages:</strong> Python, Java, C/C++, JavaScript, SQL, Verilog, VHDL</p>
+        <p><strong>Frameworks:</strong> TensorFlow, PyTorch, Django, React, Node.js</p>
+        <p><strong>Tools:</strong> Git, Visual Studio Code, Jira, IntelliJ IDEA, Jupyter Notebook</p>
+        <p><strong>Libraries:</strong> Pandas, NumPy, Matplotlib, Selenium, BeautifulSoup</p>
+    </div>
+
+    <div class="projects">
+        <h2>Projects</h2>
+        <ul>
+            <li><i class="fas fa-check-circle"></i> <strong>University Course Calendar Automation:</strong> Automated academic event extraction and Outlook integration using LLaMA and Python.</li>
+            <li><i class="fas fa-check-circle"></i> <strong>Price Comparator App:</strong> Scaled Python web scraper for over 5,000 URLs, integrated MySQL for storage, and added a recommendation engine using OCR.</li>
+            <li><i class="fas fa-check-circle"></i> <strong>Parking Zone Monitoring System:</strong> Developed a YOLOv8-based license plate recognition system achieving 90% accuracy.</li>
+            <li><i class="fas fa-check-circle"></i> <strong>Study Permit Analysis:</strong> Created a Power BI dashboard visualizing trends in Canadian study permits over a decade.</li>
+        </ul>
+    </div>
+
+    <div class="contact">
+        <h2>What I'm Learning</h2>
+        <p><strong>Deep Learning Frameworks:</strong> PyTorch, TensorFlow</p>
+        <p><strong>Data Visualization Tools:</strong> Power BI, Matplotlib, DAX</p>
+        <p><strong>Web Development:</strong> React, Node.js, Django</p>
+    </div>
+</div>
+{% endblock %}

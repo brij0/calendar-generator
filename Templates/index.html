@@ -4,20 +4,7 @@
 
 {% block extra_css %}
 <style>
-    /* Top bar fixes */
-    .navbar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        z-index: 1050;
-        background: white;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
 
-    body {
-        padding-top: 70px; /* Adjust based on navbar height */
-    }
 
     /* Hero section */
     .hero-section {
@@ -28,6 +15,17 @@
         border-radius: 0 0 20px 20px;
         text-align: center;
     }
+
+     input[type="number"]::-webkit-inner-spin-button, 
+    input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* input[type="number"] {
+        -moz-appearance: textfield; 
+        appearance: textfield;
+    }  */
 
     /* Course selector box */
     .course-selector {
@@ -61,7 +59,7 @@
     .form-control {
         border-radius: 10px;
         border: 2px solid #e1e8ed;
-        padding: 0.75rem;
+        padding: 0;
         text-align: center;
         text-align-last: center; /* Modern browsers */
         transition: all 0.3s;
@@ -180,6 +178,7 @@
     $(document).ready(function () {
         let animationDelay = 100;
 
+        // Generate course selection rows
         $("#generate-rows").click(function () {
             const numCourses = parseInt($("#num-courses").val());
             if (isNaN(numCourses) || numCourses <= 0) {
@@ -216,6 +215,7 @@
             }
         });
 
+        // Fetch course codes when course type changes
         $(document).on("change", ".course-type", function () {
             let row = $(this).closest('.dropdown-row').index();
             let courseType = $(this).val();
@@ -237,16 +237,18 @@
             }
         });
 
+        // Fetch section numbers when course code changes
         $(document).on("change", ".course-code", function () {
             let row = $(this).closest('.dropdown-row').index();
+            let courseType = $(`select[name="course_type_${row}"]`).val();
             let courseCode = $(this).val();
 
-            if (courseCode) {
+            if (courseType && courseCode) {
                 $.ajax({
                     url: "/get_section_numbers",
                     type: "POST",
                     contentType: "application/json",
-                    data: JSON.stringify({ course_code: courseCode }),
+                    data: JSON.stringify({ course_type: courseType, course_code: courseCode }),
                     success: function (data) {
                         let sectionNumberDropdown = $(`select[name="section_number_${row}"]`);
                         sectionNumberDropdown.empty().append('<option value="">Select Section Number</option>');

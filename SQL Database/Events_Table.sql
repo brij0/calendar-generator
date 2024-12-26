@@ -36,4 +36,4 @@ CREATE TABLE course_dropdown (
 );
 select * from course_dropdown;
 
-select * from courses where course_code = 1250;
+select DISTINCT section_number from courses where course_type = "ENGG" and course_code = 1210;
