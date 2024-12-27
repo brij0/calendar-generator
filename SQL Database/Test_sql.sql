@@ -1,10 +1,7 @@
+create database test;
 
-SELECT * FROM courses;
-SELECT * FROM events;
-
-
-use course_details;
-CREATE TABLE courses (
+use test;
+CREATE TABLE test_courses (
     course_id INT AUTO_INCREMENT PRIMARY KEY,
     section_name VARCHAR(50) NOT NULL,
 	seats VARCHAR(50),
@@ -14,17 +11,24 @@ CREATE TABLE courses (
     section_number VARCHAR(20) NOT NULL
 );
 
-CREATE TABLE events (
+CREATE TABLE test_events (
     event_id INT AUTO_INCREMENT PRIMARY KEY,
     course_id INT NOT NULL,
     event_type VARCHAR(50),
     times VARCHAR(255),
     location VARCHAR(255),
-    FOREIGN KEY (course_id) REFERENCES courses(course_id)
+    FOREIGN KEY (course_id) REFERENCES test_courses(course_id)
 );
 
 
-CREATE TABLE course_events (
+CREATE TABLE test_course_dropdown (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_type VARCHAR(20),
+    course_code VARCHAR(20),
+    section_number VARCHAR(20)
+);
+
+CREATE TABLE test_course_events (
     event_id INT AUTO_INCREMENT PRIMARY KEY,
     course_id INT NOT NULL,
     event_type VARCHAR(50) NOT NULL,
@@ -36,18 +40,11 @@ CREATE TABLE course_events (
     location VARCHAR(255),
     description VARCHAR(200),
     weightage VARCHAR(20),
-    FOREIGN KEY (course_id) REFERENCES courses(course_id)
+    FOREIGN KEY (course_id) REFERENCES test_courses(course_id)
 );
 
-
-CREATE TABLE course_dropdown (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    course_type VARCHAR(20),
-    course_code VARCHAR(20),
-    section_number VARCHAR(20)
-);
-select * from course_dropdown;
-
-select * from courses where course_type = "ENGG" and course_code = 3390;
-
-select * from events where course_id = 421;
+select * from test_courses;
+select * from test_events;
+select * from test_course_dropdown;
+select * from test_course_events;
+truncate test_course_events;

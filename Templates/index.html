@@ -178,7 +178,35 @@
     $(document).ready(function () {
         let animationDelay = 100;
 
-        // Generate course selection rows
+        // Add initial page load animations
+        $(".hero-section").hide().fadeIn(1500);
+        $(".course-selector").css({
+            'opacity': '0',
+            'transform': 'translateY(50px)'
+        }).animate({
+            'opacity': '1',
+            'transform': 'translateY(0)'
+        }, 1000);
+        
+        // Animate feature cards on scroll
+        $(window).scroll(function() {
+            $('.feature-card').each(function() {
+                let cardPosition = $(this).offset().top;
+                let scrollPosition = $(window).scrollTop() + $(window).height();
+                
+                if (scrollPosition > cardPosition) {
+                    $(this).addClass('animate__animated animate__fadeInUp');
+                }
+            });
+        });
+
+        // Button hover effects
+        $('.btn').hover(
+            function() { $(this).addClass('animate__animated animate__pulse'); },
+            function() { $(this).removeClass('animate__animated animate__pulse'); }
+        );
+
+        // Generate course selection rows with enhanced animations
         $("#generate-rows").click(function () {
             const numCourses = parseInt($("#num-courses").val());
             if (isNaN(numCourses) || numCourses <= 0) {
@@ -212,10 +240,15 @@
                         </div>
                     </div>`;
                 courseRows.append(rowHtml);
+                
+                // Add fade-slide animation to new rows
+                $('.dropdown-row').last().hide().slideDown(500).animate({
+                    opacity: 1
+                }, 500);
             }
         });
 
-        // Fetch course codes when course type changes
+        // Rest of the AJAX code remains the same
         $(document).on("change", ".course-type", function () {
             let row = $(this).closest('.dropdown-row').index();
             let courseType = $(this).val();
@@ -237,7 +270,6 @@
             }
         });
 
-        // Fetch section numbers when course code changes
         $(document).on("change", ".course-code", function () {
             let row = $(this).closest('.dropdown-row').index();
             let courseType = $(`select[name="course_type_${row}"]`).val();

@@ -4,6 +4,12 @@
 
 {% block extra_css %}
 <style>
+    body {
+        font-family: 'Arial', sans-serif;
+        line-height: 1.6;
+        color: #333;
+    }
+
     .about-section {
         padding: 4rem 0;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -19,7 +25,7 @@
         margin: -2rem 2rem 4rem 2rem;
     }
 
-    .about-card h1 {
+    .about-card h1, .about-card h2 {
         color: #495057;
     }
 
@@ -54,6 +60,53 @@
     .projects ul li i {
         color: #764ba2;
         margin-right: 0.5rem;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -1rem;
+    }
+
+    .col-md-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
+        padding: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .col-md-6 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    a {
+        color: #764ba2;
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: underline;
     }
 </style>
 {% endblock %}
@@ -108,3 +161,42 @@
     </div>
 </div>
 {% endblock %}
+
+
+<!-- 
+
+I dont like this design at all 
+
+Design a minimalist yet visually pleasing website with the following features. Ensure the design applies uniformly to all elements (e.g., buttons, cards, headers, images, forms). Use modern aesthetics, subtle animations, and interactive elements while maintaining simplicity. Focus on:
+
+Minimalist Layout:
+
+Use a clean grid-based structure with ample whitespace.
+Avoid clutter and emphasize simplicity and focus.
+Subtle Animations:
+
+Add smooth transitions for hover effects on buttons, links, and cards.
+Include scroll-based animations (e.g., fade-ins, slides) for sections as the user navigates.
+Soft Shadows:
+
+Incorporate modern, soft box shadows to create a sense of depth.
+Use shadows subtly to highlight interactive elements like cards and modals.
+Elegant Typography:
+
+Use clean, sans-serif fonts with varying weights for headings and body text.
+Maintain a harmonious hierarchy with consistent font sizes and spacing.
+Color Palette:
+
+Use a minimal color scheme (e.g., 2-3 primary colors) with neutral tones.
+Highlight interactive elements with a single accent color.
+Responsive Design:
+
+Ensure the website looks seamless across all screen sizes.
+Adapt typography, animations, and spacing dynamically for smaller devices.
+Interactive Elements:
+
+Use hover states, focus outlines, and micro-interactions for buttons, forms, and links.
+Include animated feedback for user actions (e.g., button presses, form submissions).
+
+
+-->

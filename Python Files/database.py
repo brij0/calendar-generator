@@ -65,7 +65,7 @@ def add_cleaned_section_to_db(course_data):
 
                     # Insert section into database
                     query1 = """
-                        INSERT INTO courses (section_name, seats, instructor, course_type, course_code, section_number)
+                        INSERT INTO test_courses (section_name, seats, instructor, course_type, course_code, section_number)
                         VALUES (%s, %s, %s, %s, %s, %s)
                     """
                     cursor.execute(query1, (section_name, seats, instructors, course_type, course_code, section_number))
@@ -107,7 +107,7 @@ def add_cleaned_section_to_db(course_data):
 
                         # Insert event into database
                         query2 = """
-                            INSERT INTO events (course_id, event_type, times, location)
+                            INSERT INTO test_events (course_id, event_type, times, location)
                             VALUES (%s, %s, %s, %s)
                         """
                         cursor.execute(query2, (course_id, event_type, times, location))
@@ -129,9 +129,52 @@ def add_cleaned_section_to_db(course_data):
         connection.close()
 
 
+
+
+def insert_events_batch(events, course_id):
+    """
+    Insert multiple events into the course_events table in one batch operation.
+    """
+    connection, cursor = connect_to_database()
+    query = """
+        INSERT INTO test_course_events (
+            course_id, event_type, event_date, start_date, end_date, days, time, location, description, weightage
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+
+    # Prepare the data for batch insertion
+    data = [
+        (
+            course_id,
+            event.get('event_type'),
+            event.get('date'),
+            event.get('start_date'),
+            event.get('end_date'),
+            ','.join(event.get('days', [])),
+            event.get('time'),
+            event.get('location'),
+            event.get('description'),
+            event.get('weightage')
+        )
+        for event in events
+    ]
+
+    try:
+        # Use executemany for batch insertion
+        cursor.executemany(query, data)
+        connection.commit()
+        print(f"Inserted {cursor.rowcount} events for course ID {course_id}.")
+    except Exception as e:
+        print(f"An error occurred while inserting events: {e}")
+        connection.rollback()
+    finally:
+        cursor.close()
+        connection.close()
+
+
 def extract_section_info(school, course_code, section_number):
     """
-    Extract section information (event type, times, location) for a specific course and section.
+    Extract section information (event type, times, location) and course_id for a specific course and section.
 
     Args:
         school (str): School code (e.g., ENGG).
@@ -139,34 +182,42 @@ def extract_section_info(school, course_code, section_number):
         section_number (str): Section number (e.g., 0201).
 
     Returns:
-        dict: A dictionary with the course code as the key and a list of dictionaries containing event_type, times, and location for the section as the value.
+        dict: A dictionary with the course_id, course code, and a list of dictionaries containing event_type, times, and location for the section.
     """
     full_course_code = f"{school}*{course_code}*{section_number}"
     connection, cursor = connect_to_database()
-    
+
     try:
         query = """
-            SELECT e.event_type, e.times, e.location
-            FROM events e
-            JOIN courses c ON e.course_id = c.course_id
+            SELECT c.course_id, e.event_type, e.times, e.location
+            FROM test_events e
+            JOIN test_courses c ON e.course_id = c.course_id
             WHERE c.section_name = %s
         """
         cursor.execute(query, (full_course_code,))
         rows = cursor.fetchall()
+
+        # Extract course_id and section information
         section_info = {
-            full_course_code: [
-                {
-                    'event_type': row[0],
-                    'times': row[1],
-                    'location': row[2]
-                } for row in rows
-            ]
+            'course_id': None,  # Initialize with None in case no data is found
+            'section_details': []
         }
-        
+
+        for row in rows:
+            if section_info['course_id'] is None:
+                section_info['course_id'] = row[0]  # Set course_id from the first row
+            section_info['section_details'].append({
+                'event_type': row[1],
+                'times': row[2],
+                'location': row[3]
+            })
+
         return section_info
     except Exception as e:
         print(f"Database error: {e}")
-        return {full_course_code: []}
+        return {'course_id': None, 'section_details': []}
     finally:
         cursor.close()
         connection.close()
+
+

@@ -26,7 +26,8 @@ C_Eng_courses =["CHEM*1040", "ENGG*1100", "ENGG*1410", "MATH*1200",
                 "ENGG*4550", "ENGG*3390", "ENGG*4000", "COOP*1100", 
                 "PHYS*1130", "ENGG*1210",  "CIS*2910", "HIST*1250", 
                 "ENGG*3050"]
-test = ["ENGG*3700"]
+
+test = ["ENGG*3390","ENGG*3450","ENGG*3640","ENGG*3700","ENGG*4450","HIST*1250"]
 
 def initialize_driver():
     """
@@ -121,7 +122,7 @@ def scrape_multiple_courses(list_of_courses):
                 sb.open(url)
                 button_selector = f'button[aria-controls="collapsible-view-available-sections-for-{course}-collapseBody"]'
                 sb.click(button_selector, timeout=10, delay=0.01)
-                sb.wait(10)
+                sb.wait(5)
                 page_source = sb.get_page_source()
                 scraped_courses[course] = scrape_course_sections(page_source)
             except Exception as e:

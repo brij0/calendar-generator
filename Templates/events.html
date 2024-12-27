@@ -117,7 +117,6 @@
     }
 </style>
 {% endblock %}
-
 {% block content %}
 <div class="results-header animate-fade-in">
     <h1 class="display-4">Your Course Schedule</h1>
@@ -126,58 +125,58 @@
 
 <div class="schedule-container animate-fade-in">
     {% if events %}
-        {% for course_code, sections in events.items() %}
+        {% for course_id, course_events in events.items() %}
             <div class="course-card card">
-                <div class="course-header">
-                    <h2 class="h4 mb-0">{{ course_code }}</h2>
-                </div>
                 <div class="card-body">
-                    {% for section_code, section_events in sections.items() %}
-                        <div class="section-content">
-                            <div class="section-header">
-                                <h3 class="h5 mb-0">Section: {{ section_code }}</h3>
-                            </div>
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Event Type</th>
-                                        <th>Times</th>
-                                        <th>Location</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for event in section_events %}
-                                        <tr>
-                                            <td class="event-type">{{ event.event_type }}</td>
-                                            <td class="times">{{ event.times }}</td>
-                                            <td class="location">{{ event.location }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% endfor %}
+                    <h5 class="course-header">{{ course_id }}</h5>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Event Type</th>
+                                <th>Event Date</th>
+                                <th>Days</th>
+                                <th>Time</th>
+                                <th>Location</th>
+                                <th>Description</th>
+                                <th>Weightage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in course_events %}
+                                <tr>
+                                    <td>{{ event.event_type }}</td>
+                                    <td>{{ event.event_date.strftime('%B %d, %Y') }}</td>
+                                    <td>{{ event.days }}</td>
+                                    <td>{{ event.time }}</td>
+                                    <td>{{ event.location }}</td>
+                                    <td>{{ event.description }}</td>
+                                    <td>{{ event.weightage }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         {% endfor %}
     {% else %}
-        <div class="no-events">
+        <div class="no-events text-center mt-4">
             <i class="fas fa-calendar-times fa-3x mb-3"></i>
             <h3>No Events Found</h3>
             <p>Please select at least one course to view the schedule.</p>
         </div>
     {% endif %}
+</div>
 
-    <div class="action-buttons">
-        <a href="/" class="btn btn-back">
-            <i class="fas fa-arrow-left mr-2"></i>Search Another Course
-        </a>
-        <button class="btn export-button">
-            <i class="fas fa-download mr-2"></i>Export Schedule
-        </button>
-    </div>
+<div class="action-buttons">
+    <a href="/" class="btn btn-back">
+        <i class="fas fa-arrow-left mr-2"></i>Search Another Course
+    </a>
+    <button class="btn export-button">
+        <i class="fas fa-download mr-2"></i>Export Schedule
+    </button>
 </div>
 {% endblock %}
+
 
 {% block extra_js %}
 <script>
@@ -195,5 +194,49 @@
             alert("Export functionality coming soon!");
         });
     });
+
+// Add reveal animations on scroll
+$(window).scroll(function() {
+    $('.course-card').each(function() {
+        let cardPosition = $(this).offset().top;
+        let screenPosition = $(window).scrollTop() + $(window).height();
+        
+        if (screenPosition > cardPosition) {
+            $(this).addClass('animate__animated animate__fadeInUp');
+        }
+    });
+});
+
+// Add hover animations
+$('.course-card').hover(
+    function() {
+        $(this).addClass('animate__animated animate__pulse');
+    },
+    function() {
+        $(this).removeClass('animate__animated animate__pulse');
+    }
+);
+
+// Add loading animation
+$(window).on('load', function() {
+    $('.schedule-container').addClass('animate__animated animate__fadeIn');
+});
+
+// Add click ripple effect
+$('.btn').on('mousedown', function(e) {
+    let x = e.pageX - $(this).offset().left;
+    let y = e.pageY - $(this).offset().top;
+    
+    let ripple = $('<span class="ripple"></span>').css({
+        left: x + 'px',
+        top: y + 'px'
+    });
+    
+    $(this).append(ripple);
+    
+    setTimeout(() => {
+        ripple.remove();
+    }, 1000);
+});
 </script>
 {% endblock %}
