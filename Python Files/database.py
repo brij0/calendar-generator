@@ -1,4 +1,3 @@
-from sqlite3 import Cursor
 import mysql.connector
 import os
 from dotenv import load_dotenv
@@ -219,5 +218,3 @@ def extract_section_info(school, course_code, section_number):
     finally:
         cursor.close()
         connection.close()
-
-

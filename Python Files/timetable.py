@@ -2,13 +2,14 @@ from asyncio import events
 from calendar import c
 from datetime import datetime
 from math import e
+import struct
 from langchain_groq import ChatGroq
 import fitz
 import os
 from dotenv import load_dotenv
 import re
 from datetime import datetime
-
+import pdfplumber
 from numpy import add
 from sqlalchemy import LABEL_STYLE_DEFAULT
 from scrape_course import *
@@ -66,6 +67,7 @@ def extract_and_clean_pdf_text(pdf_path):
     cleaned_pdf_content = clean_pdf_text(text)
     return cleaned_pdf_content
 
+
 # ---------------------------------------------------------
 # LLM prompt to extract events from the course outline
 # ---------------------------------------------------------
@@ -100,44 +102,51 @@ def generate_llm_prompt(course_details, student_details):
         elif event_type in ['EXAM', 'FINAL EXAM']:
             final_exam_details["My_Final_Exam_timings_are"] = event.get('times', '')
             final_exam_details["Location"] = event.get('location', '')
-
     # Use f-strings for proper string interpolation
-    prompt_template = f"""
-        You are a precise academic event extractor. Extract ONLY the following events from the course outline:
+    prompt_template = f"""You are tasked with extracting academic events from a course outline with 100% accuracy. Follow these exact specifications:
 
-        Course Details:{course_details}
+            CONTEXT:
+            Student's Schedule:
+            - Lectures: {lec_details['My_Lecture_timings_are']} at {lec_details['Location']}
+            - Labs: {lab_details['My_Lab_timings_are']} at {lab_details['Location']}
+            - Final Exam: {final_exam_details['My_Final_Exam_timings_are']} at {final_exam_details['Location']}
 
-        Student Details:
-        My Lecture timings are {lec_details['My_Lecture_timings_are']} and the location is {lec_details['Location']}.
-        My Lab timings are {lab_details['My_Lab_timings_are']} and the location is {lab_details['Location']}.
-        My final exam timings are {final_exam_details['My_Final_Exam_timings_are']} and the location is {final_exam_details['Location']}.
+            REQUIRED EVENTS TO EXTRACT:
+            1. All assignments/projects with explicit due dates
+            2. All lab sessions mentioned in course outline
+            3. All midterm examinations
+            4. Final examination
+            5. Any recurring weekly quizzes
 
+            OUTPUT FORMAT [MANDATORY]:
+            Each event MUST be formatted exactly as follows, with NO EMPTY FIELDS and NO ADDITIONAL TEXTS:
 
-        1. Labs with explicit dates mentioned in the course outline
-        2. Midterm exam(s)
-        3. Final exam
-        4. Major assignments/projects with specific due dates
+            Event Type: [EXACTLY ONE OF: Lab|Midterm|Final|Assignment|Quiz]
+            Date: [YYYY-MM-DD]
+            Days: [SINGLE DAY matching student schedule]
+            Time: [HH:MM] (24-hour format)
+            Location: [Building,Room]
+            Description: [Concise description]
+            Weightage: [X%]
 
-        STRICT RULES:
-        - Extract lab dates EXACTLY as stated in course outline
-        - Lab times and days MUST match the student's details
-        - DO NOT generate follow-up or recurring dates
-        - DO NOT include makeup classes or holidays
-        - Each event MUST have an explicit date
-        - For assignments and lab reports, if the breakdown of weightage is provided in the course outline, use it. If not, use your best judgment to assign weightage to each individual lab/assignment.
+            CRITICAL RULES:
+            1. Extract ONLY events with explicit dates from the course outline
+            2. ALL weightages must be included - search thoroughly for grade breakdowns
+            3. Lab timings MUST match the student's schedule exactly
+            4. EXCLUDE all makeup sessions and holidays
+            5. If multiple weightage components exist for one event, sum them
 
-        FORMAT (use exactly, no extra texts at any cost):
-        Event Type: [single word, no spaces]
-        Date: [YYYY-MM-DD]
-        Days: [single day from student schedule]
-        Time: [from student schedule]
-        Location: [Building,Room]
-        Description: [max 5 words]
-        Weightage: [number %] look from the course outline
+            GRADE EXTRACTION RULES:
+            1. Search for terms: "grade breakdown", "evaluation", "assessment", "worth", "weighted"
+            2. Check both overall course breakdown and individual assignment sections
+            3. For lab components, combine related weightages (lab work + reports if applicable)
 
-        Return ONLY events with explicit dates in course outline. If unsure about a date, use your best judgment based on the given context.
-        """
-    # return print(prompt_template.format(course_details=course_details,details=details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
+            Course Outline:
+            {course_details}
+            """
+    print(prompt_template.format(course_details=course_details, details = details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
+    print("---------------------------------------------------------")
+    return None
     return invoke_llm(prompt_template.format(course_details=course_details,details=details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
 
 # ---------------------------------------------------------
@@ -235,29 +244,26 @@ def process_pdfs_make_event_list(pdf_input, student_details):
     event_list = extract_all_event_details(llm_chained_template_response)
 
     return event_list
-
-
-
 # ---------------------------------------------------------
 # Main function to execute the process
 # ---------------------------------------------------------
 
 if __name__ == "__main__":
-    # Example student details
+    # Example student details    
     course_list = [
-        {"course_type": "ENGG", "course_code": "3390", "course_section": "0101"},
-        {"course_type": "ENGG", "course_code": "3390", "course_section": "0102"},
-        {"course_type": "ENGG", "course_code": "3390", "course_section": "0103"},
-        {"course_type": "ENGG", "course_code": "3390", "course_section": "0201"},
-        {"course_type": "ENGG", "course_code": "3390", "course_section": "0203"},
-        {"course_type": "ENGG", "course_code": "3390", "course_section": "0204"}
+        # {"course_type": "ENGG", "course_code": "3390", "course_section": "0101"},
+        # {"course_type": "ENGG", "course_code": "3390", "course_section": "0102"},
+        # {"course_type": "ENGG", "course_code": "3390", "course_section": "0103"},
+        # {"course_type": "ENGG", "course_code": "3390", "course_section": "0201"},
+        # {"course_type": "ENGG", "course_code": "3390", "course_section": "0203"},
+        # {"course_type": "ENGG", "course_code": "3390", "course_section": "0204"}
 
         # {"course_type": "ENGG", "course_code": "3450", "course_section": "0101"},
         # {"course_type": "ENGG", "course_code": "3450", "course_section": "0102"},
         # {"course_type": "ENGG", "course_code": "3450", "course_section": "0103"},
         # {"course_type": "ENGG", "course_code": "3450", "course_section": "0201"},
-        # {"course_type": "ENGG", "course_code": "3450", "course_section": "0202"}
-        ]
+        {"course_type": "ENGG", "course_code": "3450", "course_section": "0202"}
+        
         # ,{"course_type": "ENGG", "course_code": "3640", "course_section": "0102"},
         # {"course_type": "ENGG", "course_code": "3640", "course_section": "0103"},
         # {"course_type": "ENGG", "course_code": "3700", "course_section": "0101"},
@@ -268,22 +274,17 @@ if __name__ == "__main__":
         # {"course_type": "ENGG", "course_code": "4450", "course_section": "0103"},
         # {"course_type": "HIST", "course_code": "1250", "course_section": "01"},
         # {"course_type": "HIST", "course_code": "1250", "course_section": "01"}
-
-    
-    for course in course_list[0:2]:
-        course_type = course.get("course_type")
-        course_code = course.get("course_code")
-        course_section = course.get("course_section")
-        student_details = extract_section_info(course_type, course_code, course_section)
-        events = process_pdfs_make_event_list(f"D:/University/All Projects/Time Table project/Sample Course Outlines/{course_type}_{course_code}.pdf", student_details)
-        event_list = []
-        for event in events:
-            if event != {}:
-                event_list.append(event)
-                print(event)
-        insert_events_batch(event_list, student_details['course_id'])
-        
-    
-
-    
-    
+        ]
+    # for course in course_list:
+    #     course_type = course.get("course_type")
+    #     course_code = course.get("course_code")
+    #     course_section = course.get("course_section")
+    #     student_details = extract_section_info(course_type, course_code, course_section)
+    #     events = process_pdfs_make_event_list(f"D:/University/All Projects/Time Table project/Sample Course Outlines/{course_type}_{course_code}.pdf", student_details)
+    #     print(events)
+        # event_list = []
+        # for event in events:
+        #     if event != {}:
+        #         event_list.append(event)
+        #         print(event)
+        # insert_events_batch(event_list, student_details['course_id'])

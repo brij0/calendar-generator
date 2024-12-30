@@ -4,8 +4,6 @@
 
 {% block extra_css %}
 <style>
-
-
     /* Hero section */
     .hero-section {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -16,7 +14,7 @@
         text-align: center;
     }
 
-     input[type="number"]::-webkit-inner-spin-button, 
+    input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button {
         -webkit-appearance: none;
         margin: 0;
@@ -61,7 +59,8 @@
         border: 2px solid #e1e8ed;
         padding: 0;
         text-align: center;
-        text-align-last: center; /* Modern browsers */
+        text-align-last: center;
+        /* Modern browsers */
         transition: all 0.3s;
     }
 
@@ -187,13 +186,13 @@
             'opacity': '1',
             'transform': 'translateY(0)'
         }, 1000);
-        
+
         // Animate feature cards on scroll
-        $(window).scroll(function() {
-            $('.feature-card').each(function() {
+        $(window).scroll(function () {
+            $('.feature-card').each(function () {
                 let cardPosition = $(this).offset().top;
                 let scrollPosition = $(window).scrollTop() + $(window).height();
-                
+
                 if (scrollPosition > cardPosition) {
                     $(this).addClass('animate__animated animate__fadeInUp');
                 }
@@ -202,8 +201,8 @@
 
         // Button hover effects
         $('.btn').hover(
-            function() { $(this).addClass('animate__animated animate__pulse'); },
-            function() { $(this).removeClass('animate__animated animate__pulse'); }
+            function () { $(this).addClass('animate__animated animate__pulse'); },
+            function () { $(this).removeClass('animate__animated animate__pulse'); }
         );
 
         // Generate course selection rows with enhanced animations
@@ -240,7 +239,7 @@
                         </div>
                     </div>`;
                 courseRows.append(rowHtml);
-                
+
                 // Add fade-slide animation to new rows
                 $('.dropdown-row').last().hide().slideDown(500).animate({
                     opacity: 1

@@ -51,3 +51,4 @@ select * from test_course_events;
 -- truncate test_course_events;
 
 -- truncate test_course_events;
+-- delete from test_course_events where event_id > 131;
