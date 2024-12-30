@@ -47,4 +47,7 @@ select * from test_courses;
 select * from test_events;
 select * from test_course_dropdown;
 select * from test_course_events;
-truncate test_course_events;
+
+-- truncate test_course_events;
+
+-- truncate test_course_events;

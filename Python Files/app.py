@@ -1,5 +1,9 @@
 from flask import Flask, request, render_template, jsonify
 from database import *
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from flask import url_for, redirect
 
 app = Flask(__name__, template_folder='D:/University/All Projects/Time Table project/templates')
 
@@ -107,6 +111,49 @@ def get_course_events(course_type, course_code, section_number):
     finally:
         cursor.close()
         connection.close()
+
+SCOPES = ['https://www.googleapis.com/auth/calendar'] # Google Calendar API scope
+
+def authenticate_google():
+    flow = InstalledAppFlow.from_client_secrets_file(
+        'path/to/credentials.json', SCOPES)  # Provide your credentials.json path
+    credentials = flow.run_local_server(port=0)
+    return credentials
+
+# Function to add events to Google Calendar
+@app.route('/add_to_calendar', methods=['POST'])
+def add_to_calendar():
+    try:
+        # Get events from the POST request
+        events = request.json.get('events')  # Expecting JSON data with events
+        if not events:
+            return jsonify({"error": "No events provided"}), 400
+
+        # Authenticate and build the Google Calendar API service
+        creds = authenticate_google()
+        service = build('calendar', 'v3', credentials=creds)
+
+        # Add each event to Google Calendar
+        for event in events:
+            calendar_event = {
+                'summary': event.get('event_type'),
+                'location': event.get('location'),
+                'description': event.get('description'),
+                'start': {
+                    'dateTime': event.get('event_date') + 'T' + event.get('time').split('-')[0] + ':00',
+                    'timeZone': 'America/Toronto',
+                },
+                'end': {
+                    'dateTime': event.get('event_date') + 'T' + event.get('time').split('-')[1] + ':00',
+                    'timeZone': 'America/Toronto',
+                },
+            }
+            service.events().insert(calendarId='primary', body=calendar_event).execute()
+
+        return jsonify({"success": "Events added to Google Calendar"}), 200
+    except Exception as e:
+        print(f"Error adding events to Google Calendar: {e}")
+        return jsonify({"error": "Failed to add events"}), 500
 
 
 if __name__ == '__main__':

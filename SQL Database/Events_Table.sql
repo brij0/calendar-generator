@@ -46,8 +46,3 @@ CREATE TABLE course_dropdown (
     course_code VARCHAR(20),
     section_number VARCHAR(20)
 );
-select * from course_dropdown;
-
-select * from courses where course_type = "ENGG" and course_code = 3390;
-
-select * from events where course_id = 421;

@@ -157,6 +157,7 @@
                     </table>
                 </div>
             </div>
+            
         {% endfor %}
     {% else %}
         <div class="no-events text-center mt-4">
@@ -167,76 +168,113 @@
     {% endif %}
 </div>
 
-<div class="action-buttons">
+<form action="/add_to_calendar" method="post" class="action-buttons">
     <a href="/" class="btn btn-back">
         <i class="fas fa-arrow-left mr-2"></i>Search Another Course
     </a>
-    <button class="btn export-button">
-        <i class="fas fa-download mr-2"></i>Export Schedule
+    <button type="submit" id="add-to-google-calendar" class="btn export-button">
+        <i class="fas fa-calendar-plus mr-2"></i>Add to Google Calendar
     </button>
-</div>
+</form>
 {% endblock %}
-
 
 {% block extra_js %}
 <script>
-    $(document).ready(function() {
-        // Add smooth scrolling to all buttons
-        $(".btn").on('click', function() {
-            $(this).addClass('animate__animated animate__pulse');
-            setTimeout(() => {
-                $(this).removeClass('animate__animated animate__pulse');
-            }, 1000);
-        });
-
-        // Export button functionality (you can implement this based on your needs)
-        $(".export-button").click(function() {
-            alert("Export functionality coming soon!");
-        });
-    });
-
-// Add reveal animations on scroll
-$(window).scroll(function() {
-    $('.course-card').each(function() {
-        let cardPosition = $(this).offset().top;
-        let screenPosition = $(window).scrollTop() + $(window).height();
-        
-        if (screenPosition > cardPosition) {
-            $(this).addClass('animate__animated animate__fadeInUp');
-        }
-    });
-});
-
-// Add hover animations
-$('.course-card').hover(
-    function() {
+   $(document).ready(function () {
+    // Button animations
+    $(".btn").on('click', function () {
         $(this).addClass('animate__animated animate__pulse');
-    },
-    function() {
-        $(this).removeClass('animate__animated animate__pulse');
-    }
-);
-
-// Add loading animation
-$(window).on('load', function() {
-    $('.schedule-container').addClass('animate__animated animate__fadeIn');
-});
-
-// Add click ripple effect
-$('.btn').on('mousedown', function(e) {
-    let x = e.pageX - $(this).offset().left;
-    let y = e.pageY - $(this).offset().top;
-    
-    let ripple = $('<span class="ripple"></span>').css({
-        left: x + 'px',
-        top: y + 'px'
+        setTimeout(() => {
+            $(this).removeClass('animate__animated animate__pulse');
+        }, 1000);
     });
-    
-    $(this).append(ripple);
-    
-    setTimeout(() => {
-        ripple.remove();
-    }, 1000);
+
+    // Export functionality
+    $(".export-button").click(function () {
+        alert("Export functionality coming soon!");
+    });
+
+    // Scroll animations
+    const courseCards = $('.course-card');
+    $(window).scroll(
+        debounce(function () {
+            courseCards.each(function () {
+                let cardPosition = $(this).offset().top;
+                let screenPosition = $(window).scrollTop() + $(window).height();
+
+                if (screenPosition > cardPosition) {
+                    $(this).addClass('animate__animated animate__fadeInUp');
+                }
+            });
+        }, 200)
+    );
+
+    // Hover animations
+    courseCards.hover(
+        function () {
+            $(this).addClass('animate__animated animate__pulse');
+        },
+        function () {
+            $(this).removeClass('animate__animated animate__pulse');
+        }
+    );
+
+    // Ripple effect
+    $('.btn').on('mousedown', function (e) {
+        let x = e.pageX - $(this).offset().left;
+        let y = e.pageY - $(this).offset().top;
+
+        let ripple = $('<span class="ripple"></span>').css({
+            left: x + 'px',
+            top: y + 'px',
+        });
+
+        $(this).append(ripple);
+
+        setTimeout(() => {
+            ripple.remove();
+        }, 1000);
+    });
+
+    // Google Calendar Integration
+    const calendarButton = document.getElementById('add-to-google-calendar');
+    if (calendarButton) {
+        calendarButton.addEventListener('click', function() {
+            if (!confirm('Are you sure you want to add these events to your Google Calendar?')) {
+                return;
+            }
+
+            fetch('/add_to_calendar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ events: "{{ events|tojson }}" }),
+            }).then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Events successfully added to Google Calendar!');
+                } else {
+                    alert('Failed to add events to Google Calendar.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while adding events to Google Calendar.');
+            });
+        });
+    }
 });
+
+// Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
 </script>
 {% endblock %}
+

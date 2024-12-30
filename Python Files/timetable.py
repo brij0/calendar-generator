@@ -1,3 +1,5 @@
+from asyncio import events
+from calendar import c
 from datetime import datetime
 from math import e
 from langchain_groq import ChatGroq
@@ -8,8 +10,10 @@ import re
 from datetime import datetime
 
 from numpy import add
+from sqlalchemy import LABEL_STYLE_DEFAULT
 from scrape_course import *
 import json
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 # ---------------------------------------------------------
 # Load API key and setup LLM for content processing
@@ -22,7 +26,7 @@ def invoke_llm(content):
     llm = ChatGroq(
         temperature=0,
         groq_api_key=os.getenv('GROQ_API_KEY1'),  # API key loaded from environment variable
-        model_name="llama-3.3-70b-specdec"
+        model_name="llama-3.3-70b-versatile"
     )
     
     # Send content to the LLM for processing and return the response
@@ -54,7 +58,7 @@ def extract_and_clean_pdf_text(pdf_path):
     text = ""
 
     # Loop through each page to extract the text
-    for page_num in range(doc.page_count - 4):
+    for page_num in range(doc.page_count - 3):
         page = doc.load_page(page_num)
         text += page.get_text("text")  # Extract text from the page
     
@@ -69,67 +73,72 @@ def extract_and_clean_pdf_text(pdf_path):
 
 def generate_llm_prompt(course_details, student_details):
     details = student_details.get('section_details')  # Extract section details
-    prompt_template = """
-    Extract only the following types of academic events from the course outline:
-        1. For lab sessions:
-        - Use dates from course outline
-        - Time and day MUST match student's scheduled lab slot from: {details}
-        - Do not invent or modify lab times
-
-    Midterm and Final exams
-    Course-specific assignments and projects
-
-    Exclude:
-
-    Generic recurring lectures
-    University-wide holidays or breaks
-    Administrative dates
-    Make-up classes
-
-Format each event as follows (STRICTLY FOLLOW THIS FORMAT WITHOUT EXCEPTION FOR ALL EVENTS. ENSURE NO DETAILS ARE MISSING. If uncertain, use your best judgment to complete missing details based on context):  
-
-- Event Type:  
-  Specify the type of event as one of the following: LabN, Midterm, or FinalExam.  
-
-- Date:
-  Use the exact date provided in the course outline in the format [YYYY-MM-DD]. For labs marked as "continued," include only the latest date.
-  NO OTHER TEXTS ALLOWED.  
-
-- Days:  
-  Use the scheduled day for the event based on the student's provided details.  NO OTHER TEXTS.
-
-- Time: 
-  Match the exact time of the event as per the course outline or the student's scheduled lab/exam times.  NO OTHER TEXTS.
-
-- Location:
-  Include the complete location in the format [Building, Room]. If no location is explicitly stated, note "TBA."  
-
-- Description: 
-  Provide a concise description of the event, clearly specifying its purpose (e.g., "Laboratory 1 with report," "Midterm exam covering Weeks 1-5").  
-
-- Weightage:
-  Indicate the percentage weightage of the event as a percentage value ONLY (e.g., "8.33%", "25%") check if the explicit weightages are mentioned in the document no other texts.  
-
-Important Notes:
-- Every event must include all the above fields. Events with missing details should be completed using contextual judgment or noted explicitly (e.g., "Location: TBA").
-- Do not deviate from this format or omit any details under any circumstances.
-- Double-check for completeness and accuracy before returning results.
-
-    Course Information:
-    {course_details}
-
-    Section Details:
-    {details}
-
-    Return only events that have confirmed dates and are specific to this course section. Do not return empty events
-    """
     
-    # Correctly pass details into the format function
-    return invoke_llm(prompt_template.format(
-        course_details=course_details,
-        details=details
-    ))
+    # Initialize dictionaries for different event types
+    lec_details = {
+        "My_Lecture_timings_are": "",
+        "Location": ""
+    }
+    lab_details = {
+        "My_Lab_timings_are": "",
+        "Location": ""
+    }
+    final_exam_details = {
+        "My_Final_Exam_timings_are": "",
+        "Location": ""
+    }
+    
+    # Extract details from student_details
+    for event in details:
+        event_type = event.get('event_type')
+        if event_type == 'LEC':
+            lec_details["My_Lecture_timings_are"] = event.get('times', '')
+            lec_details["Location"] = event.get('location', '')
+        elif event_type == 'LAB':
+            lab_details["My_Lab_timings_are"] = event.get('times', '')
+            lab_details["Location"] = event.get('location', '')
+        elif event_type in ['EXAM', 'FINAL EXAM']:
+            final_exam_details["My_Final_Exam_timings_are"] = event.get('times', '')
+            final_exam_details["Location"] = event.get('location', '')
 
+    # Use f-strings for proper string interpolation
+    prompt_template = f"""
+        You are a precise academic event extractor. Extract ONLY the following events from the course outline:
+
+        Course Details:{course_details}
+
+        Student Details:
+        My Lecture timings are {lec_details['My_Lecture_timings_are']} and the location is {lec_details['Location']}.
+        My Lab timings are {lab_details['My_Lab_timings_are']} and the location is {lab_details['Location']}.
+        My final exam timings are {final_exam_details['My_Final_Exam_timings_are']} and the location is {final_exam_details['Location']}.
+
+
+        1. Labs with explicit dates mentioned in the course outline
+        2. Midterm exam(s)
+        3. Final exam
+        4. Major assignments/projects with specific due dates
+
+        STRICT RULES:
+        - Extract lab dates EXACTLY as stated in course outline
+        - Lab times and days MUST match the student's details
+        - DO NOT generate follow-up or recurring dates
+        - DO NOT include makeup classes or holidays
+        - Each event MUST have an explicit date
+        - For assignments and lab reports, if the breakdown of weightage is provided in the course outline, use it. If not, use your best judgment to assign weightage to each individual lab/assignment.
+
+        FORMAT (use exactly, no extra texts at any cost):
+        Event Type: [single word, no spaces]
+        Date: [YYYY-MM-DD]
+        Days: [single day from student schedule]
+        Time: [from student schedule]
+        Location: [Building,Room]
+        Description: [max 5 words]
+        Weightage: [number %] look from the course outline
+
+        Return ONLY events with explicit dates in course outline. If unsure about a date, use your best judgment based on the given context.
+        """
+    # return print(prompt_template.format(course_details=course_details,details=details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
+    return invoke_llm(prompt_template.format(course_details=course_details,details=details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
 
 # ---------------------------------------------------------
 # Extract details from an individual event string
@@ -235,51 +244,46 @@ def process_pdfs_make_event_list(pdf_input, student_details):
 
 if __name__ == "__main__":
     # Example student details
-    course_type, course_code, section_number = "ENGG", "3450", "0101"
-    connection, cursor = connect_to_database()
+    course_list = [
+        {"course_type": "ENGG", "course_code": "3390", "course_section": "0101"},
+        {"course_type": "ENGG", "course_code": "3390", "course_section": "0102"},
+        {"course_type": "ENGG", "course_code": "3390", "course_section": "0103"},
+        {"course_type": "ENGG", "course_code": "3390", "course_section": "0201"},
+        {"course_type": "ENGG", "course_code": "3390", "course_section": "0203"},
+        {"course_type": "ENGG", "course_code": "3390", "course_section": "0204"}
 
-    query = """
-            SELECT e.event_type, e.event_date, e.start_date, e.end_date, e.days, e.time, e.location, e.description, e.weightage
-            FROM test_course_events e
-            JOIN test_courses c ON e.course_id = c.course_id
-            WHERE c.course_type = %s AND c.course_code = %s AND c.section_number = %s
-        """
-    cursor.execute(query, (course_type, course_code, section_number))
-    rows = cursor.fetchall()
+        # {"course_type": "ENGG", "course_code": "3450", "course_section": "0101"},
+        # {"course_type": "ENGG", "course_code": "3450", "course_section": "0102"},
+        # {"course_type": "ENGG", "course_code": "3450", "course_section": "0103"},
+        # {"course_type": "ENGG", "course_code": "3450", "course_section": "0201"},
+        # {"course_type": "ENGG", "course_code": "3450", "course_section": "0202"}
+        ]
+        # ,{"course_type": "ENGG", "course_code": "3640", "course_section": "0102"},
+        # {"course_type": "ENGG", "course_code": "3640", "course_section": "0103"},
+        # {"course_type": "ENGG", "course_code": "3700", "course_section": "0101"},
+        # {"course_type": "ENGG", "course_code": "3700", "course_section": "0102"},
+        # {"course_type": "ENGG", "course_code": "3700", "course_section": "0103"},
+        # {"course_type": "ENGG", "course_code": "4450", "course_section": "0101"},
+        # {"course_type": "ENGG", "course_code": "4450", "course_section": "0102"},
+        # {"course_type": "ENGG", "course_code": "4450", "course_section": "0103"},
+        # {"course_type": "HIST", "course_code": "1250", "course_section": "01"},
+        # {"course_type": "HIST", "course_code": "1250", "course_section": "01"}
 
-    events = []
-    for row in rows:
-            event = {
-                'event_type': row[0],
-                'event_date': row[1],
-                'start_date': row[2],
-                'end_date': row[3],
-                'days': row[4],
-                'time': row[5],
-                'location': row[6],
-                'description': row[7],
-                'weightage': row[8]
-            }
-            events.append(event)
-        
-    key = f"{course_type}*{course_code}*{section_number}"
-    dict = {key: events}
-
-    for events in dict.values():
-        for event in events:
-            print(event)
     
-    # student_details = extract_section_info("ENGG", "3450", "0101")
-    # events = process_pdfs_make_event_list("D:/University/All Projects/Time Table project/Sample Course Outlines/ENGG_3450.pdf", student_details)
-    # print(type(events))
-    # event_list = []
-
-    # for event in events:
-    #     if event != {}:
-    #         event_list.append(event)
-    #         print(event)
-
-    # insert_events_batch(event_list, student_details['course_id'])
+    for course in course_list[0:2]:
+        course_type = course.get("course_type")
+        course_code = course.get("course_code")
+        course_section = course.get("course_section")
+        student_details = extract_section_info(course_type, course_code, course_section)
+        events = process_pdfs_make_event_list(f"D:/University/All Projects/Time Table project/Sample Course Outlines/{course_type}_{course_code}.pdf", student_details)
+        event_list = []
+        for event in events:
+            if event != {}:
+                event_list.append(event)
+                print(event)
+        insert_events_batch(event_list, student_details['course_id'])
+        
+    
 
     
     
