@@ -1,4 +1,3 @@
-from http import client
 from flask import Flask, request, render_template, jsonify
 from database import *
 from google.oauth2.credentials import Credentials
@@ -219,7 +218,6 @@ def add_events_to_calendar():
         # Authenticate and build the Google Calendar API service
         credentials = get_google_credentials()
         authed_session = AuthorizedSession(credentials)
-        service = build('calendar', 'v3', credentials=credentials, request=authed_session)
         service = build('calendar', 'v3', credentials=credentials)
 
         added_events = []
@@ -250,7 +248,7 @@ def add_events_to_calendar():
                     'timeZone': 'America/Toronto',
                 }
             }
-            
+
             result = service.events().insert(calendarId='primary', body=calendar_event).execute()
             added_events.append(result['id'])
 
