@@ -5,36 +5,36 @@ from timetable import *
 from scrape_course import *
 import re
 
-def connect_to_database():
+def get_db_connection():
     """
     Connect to the MySQL database using the credentials from environment variables.
     Returns:
-        connection: A connection object to the MySQL database.
-        cursor: A cursor object to execute queries.
+        db_connection: A connection object to the MySQL database.
+        db_cursor: A cursor object to execute queries.
     """
     # Load environment variables
     load_dotenv()
     try:
-        connection = mysql.connector.connect(
+        db_connection = mysql.connector.connect(
             host=os.getenv("DB_HOST"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_NAME")
         )
-        cursor = connection.cursor()
+        db_cursor = db_connection.cursor()
         print("Connected to the database successfully!")
-        return connection, cursor
+        return db_connection, db_cursor
     except mysql.connector.Error as err:
         print(f"Error: {err}")
         return None, None
     
-def add_cleaned_section_to_db(course_data):
+def insert_cleaned_sections(courses_data):
     """
     Clean and add scraped course sections and their associated events to the database.
     Matches the MySQL schema with specific field lengths and constraints.
 
     Args:
-        course_data (dict): Dictionary with course codes as keys and lists of section info as values
+        courses_data (dict): Dictionary with course codes as keys and lists of section info as values
     """
     # Mapping for days abbreviation to full names
     days_mapping = {
@@ -47,94 +47,91 @@ def add_cleaned_section_to_db(course_data):
         "Su": "Sunday"
     }
 
-    connection, cursor = connect_to_database()
+    db_connection, db_cursor = get_db_connection()
 
     try:
         # Process each course and its sections
-        for course_code, sections in course_data.items():
+        for course_code, sections in courses_data.items():
             if sections:
-                for section in sections:
+                for course_section in sections:
                     # Clean and truncate section data
-                    section_name = section.get('section_name', '')[:20]  # VARCHAR(50)
-                    seats = section.get('seats', '0/0')[:20]  # VARCHAR(50)
-                    instructors = ', '.join(section.get('instructors', ['Unknown']))[:50]  # VARCHAR(50)
-                    course_type = section.get('course_type', 'Unknown')[:20]  # VARCHAR(50)
-                    course_code = section.get('course_code', '')[:20]  # VARCHAR(50)
-                    section_number = section.get('section_number', '')[:20]  # VARCHAR(50)
+                    section_name_cleaned = course_section.get('section_name', '')[:20]  # VARCHAR(50)
+                    seats_info = course_section.get('seats', '0/0')[:20]  # VARCHAR(50)
+                    instructors_list = ', '.join(course_section.get('instructors', ['Unknown']))[:50]  # VARCHAR(50)
+                    course_type_cleaned = course_section.get('course_type', 'Unknown')[:20]  # VARCHAR(50)
+                    course_code_cleaned = course_section.get('course_code', '')[:20]  # VARCHAR(50)
+                    section_number_cleaned = course_section.get('section_number', '')[:20]  # VARCHAR(50)
 
                     # Insert section into database
-                    query1 = """
+                    insert_section_query = """
                         INSERT INTO test_courses (section_name, seats, instructor, course_type, course_code, section_number)
                         VALUES (%s, %s, %s, %s, %s, %s)
                     """
-                    cursor.execute(query1, (section_name, seats, instructors, course_type, course_code, section_number))
+                    db_cursor.execute(insert_section_query, (section_name_cleaned, seats_info, instructors_list, course_type_cleaned, course_code_cleaned, section_number_cleaned))
 
                     # Get the last inserted course_id
-                    course_id = cursor.lastrowid
+                    inserted_course_id = db_cursor.lastrowid
 
                     # Process and clean meeting details
-                    meeting_details = section.get('meeting_details', [])
-                    for meeting in meeting_details:
+                    meetings_details = course_section.get('meeting_details', [])
+                    for meeting_detail in meetings_details:
                         # Clean event data
                         # Clean times
-                        times = meeting.get('times', [])
-                        if times:
-                            times_str = ', '.join(times) if isinstance(times, list) else str(times)
-                            match = re.match(r"([MTWThFSu/]+)([0-9:AMP-]+)", times_str)
+                        meeting_times = meeting_detail.get('times', [])
+                        if meeting_times:
+                            meeting_times_str = ', '.join(meeting_times) if isinstance(meeting_times, list) else str(meeting_times)
+                            match = re.match(r"([MTWThFSu/]+)([0-9:AMP-]+)", meeting_times_str)
                             if match:
-                                days_part = match.group(1)
-                                time_part = match.group(2)
+                                days_abbreviation = match.group(1)
+                                time_details = match.group(2)
 
-                                expanded_days = [days_mapping.get(day, day) for day in days_part.split('/')]
-                                expanded_days_str = ', '.join(expanded_days)
+                                expanded_days_list = [days_mapping.get(day, day) for day in days_abbreviation.split('/')]
+                                expanded_days_string = ', '.join(expanded_days_list)
 
-                                rest_part = times_str.replace(match.group(0), "").replace("TBD", "").strip()
-                                times = f"{expanded_days_str}, {time_part} {rest_part}".strip(", ")
+                                remaining_time_details = meeting_times_str.replace(match.group(0), "").replace("TBD", "").strip()
+                                meeting_times = f"{expanded_days_string}, {time_details} {remaining_time_details}".strip(", ")
                             else:
-                                times = times_str.replace("TBD", "").strip()
+                                meeting_times = meeting_times_str.replace("TBD", "").strip()
 
                         # Clean location
-                        locations = meeting.get('locations', [])
-                        location = (locations[0] if isinstance(locations, list) and locations else str(locations)).replace('TBD', '').strip()[:255]
+                        meeting_locations = meeting_detail.get('locations', [])
+                        meeting_location_cleaned = (meeting_locations[0] if isinstance(meeting_locations, list) and meeting_locations else str(meeting_locations)).replace('TBD', '').strip()[:255]
 
                         # Clean event type
-                        event_type = meeting.get('event_type', 'Unknown').replace('TBD', '').strip()[:50]
+                        event_type_cleaned = meeting_detail.get('event_type', 'Unknown').replace('TBD', '').strip()[:50]
 
                         # Skip events with event_type "Unknown"
-                        if event_type.lower() == 'unknown':
+                        if event_type_cleaned.lower() == 'unknown':
                             continue
 
                         # Insert event into database
-                        query2 = """
+                        insert_event_query = """
                             INSERT INTO test_events (course_id, event_type, times, location)
                             VALUES (%s, %s, %s, %s)
                         """
-                        cursor.execute(query2, (course_id, event_type, times, location))
+                        db_cursor.execute(insert_event_query, (inserted_course_id, event_type_cleaned, meeting_times, meeting_location_cleaned))
 
                 print(f"Processed {len(sections)} sections for course: {course_code}")
             else:
                 print(f"No sections found for course: {course_code}")
 
         # Commit the transaction
-        connection.commit()
+        db_connection.commit()
         print("Successfully added all cleaned sections and events to the database")
 
     except Exception as e:
         print(f"An error occurred while adding data to the database: {e}")
-        connection.rollback()
+        db_connection.rollback()
 
     finally:
-        cursor.close()
-        connection.close()
+        db_cursor.close()
+        db_connection.close()
 
-
-
-
-def insert_events_batch(events, course_id):
+def batch_insert_events(events_list, course_id):
     """
     Insert multiple events into the course_events table in one batch operation.
     """
-    connection, cursor = connect_to_database()
+    db_connection, db_cursor = get_db_connection()
     query = """
         INSERT INTO test_course_events (
             course_id, event_type, event_date, start_date, end_date, days, time, location, description, weightage
@@ -142,7 +139,7 @@ def insert_events_batch(events, course_id):
     """
 
     # Prepare the data for batch insertion
-    data = [
+    batch_data = [
         (
             course_id,
             event.get('event_type'),
@@ -155,36 +152,35 @@ def insert_events_batch(events, course_id):
             event.get('description'),
             event.get('weightage')
         )
-        for event in events
+        for event in events_list
     ]
 
     try:
         # Use executemany for batch insertion
-        cursor.executemany(query, data)
-        connection.commit()
-        print(f"Inserted {cursor.rowcount} events for course ID {course_id}.")
+        db_cursor.executemany(query, batch_data)
+        db_connection.commit()
+        print(f"Inserted {db_cursor.rowcount} events for course ID {course_id}.")
     except Exception as e:
         print(f"An error occurred while inserting events: {e}")
-        connection.rollback()
+        db_connection.rollback()
     finally:
-        cursor.close()
-        connection.close()
+        db_cursor.close()
+        db_connection.close()
 
-
-def extract_section_info(school, course_code, section_number):
+def get_section_details(school_code, course_code, section_number):
     """
     Extract section information (event type, times, location) and course_id for a specific course and section.
 
     Args:
-        school (str): School code (e.g., ENGG).
+        school_code (str): School code (e.g., ENGG).
         course_code (str): Course code (e.g., 3450).
         section_number (str): Section number (e.g., 0201).
 
     Returns:
         dict: A dictionary with the course_id, course code, and a list of dictionaries containing event_type, times, and location for the section.
     """
-    full_course_code = f"{school}*{course_code}*{section_number}"
-    connection, cursor = connect_to_database()
+    full_section_code = f"{school_code}*{course_code}*{section_number}"
+    db_connection, db_cursor = get_db_connection()
 
     try:
         query = """
@@ -193,28 +189,28 @@ def extract_section_info(school, course_code, section_number):
             JOIN test_courses c ON e.course_id = c.course_id
             WHERE c.section_name = %s
         """
-        cursor.execute(query, (full_course_code,))
-        rows = cursor.fetchall()
+        db_cursor.execute(query, (full_section_code,))
+        query_results = db_cursor.fetchall()
 
         # Extract course_id and section information
-        section_info = {
+        section_details = {
             'course_id': None,  # Initialize with None in case no data is found
             'section_details': []
         }
 
-        for row in rows:
-            if section_info['course_id'] is None:
-                section_info['course_id'] = row[0]  # Set course_id from the first row
-            section_info['section_details'].append({
-                'event_type': row[1],
-                'times': row[2],
-                'location': row[3]
+        for result_row in query_results:
+            if section_details['course_id'] is None:
+                section_details['course_id'] = result_row[0]  # Set course_id from the first row
+            section_details['section_details'].append({
+                'event_type': result_row[1],
+                'times': result_row[2],
+                'location': result_row[3]
             })
 
-        return section_info
+        return section_details
     except Exception as e:
         print(f"Database error: {e}")
         return {'course_id': None, 'section_details': []}
     finally:
-        cursor.close()
-        connection.close()
+        db_cursor.close()
+        db_connection.close()

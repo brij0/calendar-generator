@@ -2,33 +2,6 @@ from seleniumbase import SB
 from bs4 import BeautifulSoup
 from database import *
 
-
-All_Courses = [
-    "ENGG*2010", "ENGG*4010", "ENGG*3020", "ENGG*2120", "ENGG*3010", "ENGG*3070",
-    "ENGG*3120", "ENGG*3150", "ENGG*3220", "ENGG*3430", "ENGG*3470", "ENGG*3670",
-    "ENGG*3700", "ENGG*4030", "ENGG*4050", "ENGG*4090", "ENGG*4300", "ENGG*4440",
-    "ENGG*4470", "ENGG*4510", "ENGG*4580", "ENGG*4760", "ENGG*4810", "ENGG*4820",
-    "ENGG*1210", "ENGG*1420", "ENGG*1500", "ENGG*2160", "ENGG*2230", "ENGG*2340",
-    "ENGG*2550", "ENGG*2560", "ENGG*3080", "ENGG*3130", "ENGG*3140", "ENGG*3240",
-    "ENGG*3250", "ENGG*3260", "ENGG*3280", "ENGG*3340", "ENGG*3570", "ENGG*3650",
-    "ENGG*4020", "ENGG*4040", "ENGG*4220", "ENGG*4240", "ENGG*4360", "ENGG*4370",
-    "ENGG*4390", "ENGG*4400", "ENGG*4430", "ENGG*4460", "ENGG*4680", "ENGG*4770",
-    "ENGG*2100", "ENGG*4380", "ENGG*4110", "ENGG*4130", "ENGG*4160", "ENGG*4170"
-    ]
-
-C_Eng_courses =["CHEM*1040", "ENGG*1100", "ENGG*1410", "MATH*1200",
-                "ENGG*1420", "MATH*1210", "ENGG*1500", "ENGG*2400", 
-                "MATH*2270", "ENGG*2450", "MATH*2130", "ENGG*3240", 
-                "ENGG*3410", "ENGG*3450", "ENGG*3100", "PHYS*1010", 
-                 "CIS*2520", "ENGG*2410", "ENGG*2100", "ENGG*3380",
-                "STAT*2120", "ENGG*4450", "ENGG*3640",  "CIS*3110", 
-                 "CIS*3490", "ENGG*3210", "ENGG*4420", "ENGG*4540",
-                "ENGG*4550", "ENGG*3390", "ENGG*4000", "COOP*1100", 
-                "PHYS*1130", "ENGG*1210",  "CIS*2910", "HIST*1250", 
-                "ENGG*3050"]
-
-test = ["ENGG*3390","ENGG*3450","ENGG*3640","ENGG*3700","ENGG*4450","HIST*1250"]
-
 def init_selenium_driver():
     """
     Initialize the SeleniumBase driver with specific settings.
@@ -39,7 +12,7 @@ def init_selenium_driver():
     return SB(uc=True, browser="Chrome", incognito=True)
 
 
-def extract_course_sections(course_html):
+def extract_course_sections_for_seats(course_html):
     """
     Extract relevant course details from HTML content.
     
@@ -101,7 +74,6 @@ def extract_course_sections(course_html):
         
     return sections
 
-
 def scrape_courses(list_of_courses):
     """
     Scrape multiple courses and return their section information.
@@ -124,7 +96,7 @@ def scrape_courses(list_of_courses):
                 sb.click(button_selector, timeout=10, delay=0.01)
                 sb.wait(5)
                 page_source = sb.get_page_source()
-                scraped_courses[course] = extract_course_sections(page_source)
+                scraped_courses[course] = extract_course_sections_for_seats(page_source)
             except Exception as e:
                 print(f"An error occurred while scraping course sections for {course}: {e}")
                 scraped_courses[course] = []  # Add empty list for failed courses
@@ -132,8 +104,54 @@ def scrape_courses(list_of_courses):
     
     return scraped_courses
 
+def insert_cleaned_sections_into_seats(courses_data):
+    """
+    Clean and add scraped course sections and their associated events to the database.
+    Matches the MySQL schema with specific field lengths and constraints.
 
+    Args:
+        courses_data (dict): Dictionary with course codes as keys and lists of section info as values
+    """
+    # Mapping for days abbreviation to full names
+    days_mapping = {
+        "M": "Monday",
+        "T": "Tuesday",
+        "W": "Wednesday",
+        "Th": "Thursday",
+        "F": "Friday",
+        "Sa": "Saturday",
+        "Su": "Sunday"
+    }
 
-if __name__ == '__main__':
-    scraped = scrape_courses(test)
-    insert_cleaned_sections(scraped)
+    db_connection, db_cursor = get_db_connection()
+
+    try:
+        # Process each course and its sections
+        for course_code, sections in courses_data.items():
+            if sections:
+                for course_section in sections:
+                    # Clean and truncate section data
+                    section_name_cleaned = course_section.get('section_name', '')[:20]  # VARCHAR(50)
+                    seats_info = course_section.get('seats', '0/0')[:20]  # VARCHAR(50)
+                    instructors_list = ', '.join(course_section.get('instructors', ['Unknown']))[:50]  # VARCHAR(50)
+                    course_type_cleaned = course_section.get('course_type', 'Unknown')[:20]  # VARCHAR(50)
+                    course_code_cleaned = course_section.get('course_code', '')[:20]  # VARCHAR(50)
+                    section_number_cleaned = course_section.get('section_number', '')[:20]  # VARCHAR(50)
+
+                    # Insert section into database
+                    insert_section_query = """
+                        INSERT INTO table_for_seat_availability (section_name, seats, instructor, course_type, course_code, section_number)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """
+                    db_cursor.execute(insert_section_query, (section_name_cleaned, seats_info, instructors_list, course_type_cleaned, course_code_cleaned, section_number_cleaned))
+        # Commit the transaction
+        db_connection.commit()
+        print("Successfully added all cleaned sections and events to the database")
+
+    except Exception as e:
+        print(f"An error occurred while adding data to the database: {e}")
+        db_connection.rollback()
+
+    finally:
+        db_cursor.close()
+        db_connection.close()

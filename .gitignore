@@ -4,3 +4,4 @@
 # Ignore the venv folder
 calendar_project/
 Python Files/__pycache__/
+client_secret.json

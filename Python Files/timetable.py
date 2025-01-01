@@ -19,7 +19,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 # ---------------------------------------------------------
 # Load API key and setup LLM for content processing
 # ---------------------------------------------------------
-def invoke_llm(content):
+def invoke_language_model(content):
     # Load environment variables for API key
     load_dotenv()
 
@@ -37,7 +37,7 @@ def invoke_llm(content):
 # ---------------------------------------------------------
 # Clean up text from PDF by ensuring proper encoding
 # ---------------------------------------------------------
-def clean_pdf_text(text):
+def sanitize_pdf_text(text):
     # Ensure the text is encoded in UTF-8 and decoded back to a string
     encoded_text = text.encode('utf-8', errors='ignore')
     utf8_text = encoded_text.decode('utf-8', errors='ignore')
@@ -53,7 +53,7 @@ def clean_pdf_text(text):
 # ---------------------------------------------------------
 # Extract text from PDF and clean it
 # ---------------------------------------------------------
-def extract_and_clean_pdf_text(pdf_path):
+def extract_and_sanitize_pdf_text(pdf_path):
     # Open the PDF file
     doc = fitz.open(pdf_path)
     text = ""
@@ -64,16 +64,14 @@ def extract_and_clean_pdf_text(pdf_path):
         text += page.get_text("text")  # Extract text from the page
     
     # Clean up the extracted PDF content
-    cleaned_pdf_content = clean_pdf_text(text)
+    cleaned_pdf_content = sanitize_pdf_text(text)
     return cleaned_pdf_content
 
 
 # ---------------------------------------------------------
 # LLM prompt to extract events from the course outline
 # ---------------------------------------------------------
-
-
-def generate_llm_prompt(course_details, student_details):
+def create_llm_prompt(course_details, student_details):
     details = student_details.get('section_details')  # Extract section details
     
     # Initialize dictionaries for different event types
@@ -147,12 +145,12 @@ def generate_llm_prompt(course_details, student_details):
     print(prompt_template.format(course_details=course_details, details = details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
     print("---------------------------------------------------------")
     return None
-    return invoke_llm(prompt_template.format(course_details=course_details,details=details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
+    return invoke_language_model(prompt_template.format(course_details=course_details,details=details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
 
 # ---------------------------------------------------------
 # Extract details from an individual event string
 # ---------------------------------------------------------
-def extract_event_details(event_str):
+def parse_event_details(event_str):
     event = {}
 
     # Extract Event Type
@@ -200,7 +198,7 @@ def extract_event_details(event_str):
 # ---------------------------------------------------------
 # Parse the LLM response to extract multiple events
 # ---------------------------------------------------------
-def extract_all_event_details(events_str):
+def parse_all_event_details(events_str):
     # Split the input string by two newlines to separate events
     event_blocks = events_str.strip().split('\n\n')
 
@@ -209,7 +207,7 @@ def extract_all_event_details(events_str):
 
     # Loop through each event block and parse it
     for event_block in event_blocks:
-        event = extract_event_details(event_block)
+        event = parse_event_details(event_block)
         events.append(event)
 
     return events
@@ -217,7 +215,7 @@ def extract_all_event_details(events_str):
 # ---------------------------------------------------------
 # Helper function to parse date and time strings
 # ---------------------------------------------------------
-def parse_date_and_time(date_str, time_str):
+def convert_date_and_time(date_str, time_str):
     try:
         if date_str != 'TBA' and time_str != 'N/A':
             start_time_str, end_time_str = time_str.split(' - ')
@@ -233,15 +231,15 @@ def parse_date_and_time(date_str, time_str):
 # ---------------------------------------------------------
 # Main function to extract, parse, and format events
 # ---------------------------------------------------------
-def process_pdfs_make_event_list(pdf_input, student_details):
+def process_pdfs_to_event_list(pdf_input, student_details):
     # Extract the content from the PDF
-    pdf_content = extract_and_clean_pdf_text(pdf_input)
+    pdf_content = extract_and_sanitize_pdf_text(pdf_input)
 
     # Send the extracted content to the LLM template to process and return structured event data
-    llm_chained_template_response = generate_llm_prompt(pdf_content, student_details)
+    llm_chained_template_response = create_llm_prompt(pdf_content, student_details)
 
     # Parse the structured response and extract all events
-    event_list = extract_all_event_details(llm_chained_template_response)
+    event_list = parse_all_event_details(llm_chained_template_response)
 
     return event_list
 # ---------------------------------------------------------
@@ -275,16 +273,16 @@ if __name__ == "__main__":
         # {"course_type": "HIST", "course_code": "1250", "course_section": "01"},
         # {"course_type": "HIST", "course_code": "1250", "course_section": "01"}
         ]
-    # for course in course_list:
-    #     course_type = course.get("course_type")
-    #     course_code = course.get("course_code")
-    #     course_section = course.get("course_section")
-    #     student_details = extract_section_info(course_type, course_code, course_section)
-    #     events = process_pdfs_make_event_list(f"D:/University/All Projects/Time Table project/Sample Course Outlines/{course_type}_{course_code}.pdf", student_details)
-    #     print(events)
-        # event_list = []
-        # for event in events:
-        #     if event != {}:
-        #         event_list.append(event)
-        #         print(event)
-        # insert_events_batch(event_list, student_details['course_id'])
+    for course in course_list:
+        course_type = course.get("course_type")
+        course_code = course.get("course_code")
+        course_section = course.get("course_section")
+        student_details = get_section_details(course_type, course_code, course_section)
+        events = process_pdfs_to_event_list(f"D:/University/All Projects/Time Table project/Sample Course Outlines/{course_type}_{course_code}.pdf", student_details)
+        print(events)
+        event_list = []
+        for event in events:
+            if event != {}:
+                event_list.append(event)
+                print(event)
+        batch_insert_events(event_list, student_details['course_id'])

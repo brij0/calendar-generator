@@ -11,6 +11,16 @@ CREATE TABLE test_courses (
     section_number VARCHAR(20) NOT NULL
 );
 
+CREATE TABLE table_for_seat_availability (
+    course_id INT AUTO_INCREMENT PRIMARY KEY,
+    section_name VARCHAR(50) NOT NULL,
+	seats VARCHAR(50),
+    instructor VARCHAR(255),
+    course_type VARCHAR(20) NOT NULL,
+    course_code VARCHAR(20) NOT NULL,
+    section_number VARCHAR(20) NOT NULL
+);
+
 CREATE TABLE test_events (
     event_id INT AUTO_INCREMENT PRIMARY KEY,
     course_id INT NOT NULL,
@@ -47,6 +57,7 @@ select * from test_courses;
 select * from test_events;
 select * from test_course_dropdown;
 select * from test_course_events;
+select * from table_for_seat_availability;
 
 -- truncate test_course_events;
 

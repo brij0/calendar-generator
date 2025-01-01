@@ -239,23 +239,35 @@
         // Google Calendar Integration
         const calendarButton = document.getElementById('add-to-google-calendar');
         if (calendarButton) {
-            calendarButton.addEventListener('click', function () {
+            calendarButton.addEventListener('click', function (e) {
+                e.preventDefault(); // Prevent form submission
+
                 if (!confirm('Are you sure you want to add these events to your Google Calendar?')) {
                     return;
                 }
+
+                // Get events data - assuming it's available in template
+                const events = JSON.parse('{{ events|tojson|safe }}');
 
                 fetch('/add_to_calendar', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ events: "{{ events|tojson }}" }),
-                }).then(response => response.json())
+                    body: JSON.stringify({ events: events })
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
                             alert('Events successfully added to Google Calendar!');
                         } else {
-                            alert('Failed to add events to Google Calendar.');
+                            alert(data.error || 'Failed to add events to Google Calendar.');
                         }
                     })
                     .catch(error => {
