@@ -1,4 +1,5 @@
 from flask import Flask, request, render_template, jsonify, redirect, session
+from sqlalchemy import desc
 from database import get_db_connection
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials as GoogleCredentials
@@ -163,11 +164,14 @@ def insert_events_to_calendar():
                 # Or you can default start/end to 00:00–23:59
                 start_iso = date_obj.date().isoformat()  # "2024-12-02"
                 end_iso = date_obj.date().isoformat()    # same day, or next day if you want 1-day event
-
+                if e['weightage'] != None:
+                    description = e['description'] + e['weightage']
+                else:
+                    description = e['description']
                 event_body = {
                     'summary': f"{course_key} - {e['event_type']}",
                     'location': e['location'],
-                    'description': e['description'],
+                    'description': description,
                     'start': {
                         'date': start_iso  # For all-day event
                     },
@@ -246,12 +250,22 @@ def fetch_course_codes():
     connection.close()
     return jsonify(course_codes)
 
-@app.route('/about')
-def show_about_page():
-    """
-    Render an About page.
-    """
-    return render_template('about.html')
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/course_selection')
+def course_selection():
+    return render_template('course_selection.html')
+
+@app.route('/top_3_features')
+def top_3_features():
+    return render_template('features.html')
+
+@app.route('/upcoming_features')
+def upcoming_features():
+    return render_template('upcoming_features.html')
+
 
 @app.route('/get_section_numbers', methods=['POST'])
 def fetch_section_numbers():

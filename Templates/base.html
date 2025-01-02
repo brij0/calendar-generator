@@ -9,6 +9,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <style>
+    
+
+
         :root {
             --primary-color: #4a90e2;
             --secondary-color: #f5f6fa;
@@ -18,9 +21,10 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
             color: var(--text-color);
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: url('/static/Background.jpg') no-repeat center center fixed;
+            background-size: cover;
             min-height: 100vh;
             padding-top: 70px;
             /* Adjust based on navbar height */
@@ -33,38 +37,41 @@
             left: 0;
             width: 100%;
             z-index: 1050;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            /* background-color: #4a90e2; */
+            background: url('/static/Calendar.jpg');
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
             transition: all 0.3s ease-in-out;
-            padding: 1.2rem 2rem;
-            /* Reduced initial padding */
-            height: 70px;
-            /* Fixed height */
-            display: flex;
-            align-items: center;
         }
 
         .navbar.shrink {
-            padding: 0.4rem 1rem;
-            /* Smaller padding when shrunk */
-            background: rgba(255, 255, 255, 1);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            height: 50px;
-            /* Smaller height when shrunk */
+            padding: 0.5rem 1rem;
+            background: url('/static/Background.jpg') no-repeat center center fixed;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
         }
 
         .navbar-brand {
             font-weight: bold;
-            color: var(--primary-color) !important;
-            font-size: 1.3rem;
-            /* Slightly smaller initial size */
-            transition: font-size 0.3s ease-in-out;
+            color: var(--primary-color);
+            font-size: 1.5rem;
         }
 
-        .navbar.shrink .navbar-brand {
-            font-size: 1.1rem;
-            /* Even smaller when shrunk */
+        .navbar-nav .nav-link {
+            font-size: 1rem;
+            margin-right: 1rem;
+            color: var(--text-color);
+            transition: color var(--transition-speed);
         }
+
+        .navbar-nav .nav-link:hover {
+            color: var(--primary-color);
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 1rem;
+        }
+
 
         .container {
             padding: 2rem;
@@ -85,7 +92,7 @@
         }
 
         .footer {
-            background: rgba(255, 255, 255, 0.95);
+            
             padding: 2rem 0;
             margin-top: 4rem;
             box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.1);
@@ -125,25 +132,15 @@
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-light">
-        <div class="container d-flex align-items-center">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-calendar-alt mr-2"></i>CourseScheduler
-            </a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ml-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/"><i class="fas fa-home mr-1"></i>Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/about"><i class="fas fa-info-circle mr-1"></i>About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/contact"><i class="fas fa-envelope mr-1"></i>Contact</a>
-                    </li>
-                </ul>
+        <a class="navbar-brand" href="/">SmartGryph</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="header-icons">
+                <img src="Avatar.jpg" alt="Avatar">
+                <img src="Avatar.jpg" alt="Avatar">
+                <img src="Avatar.jpg" alt="Avatar">
             </div>
         </div>
     </nav>
@@ -177,7 +174,7 @@
             </div>
             <div class="row mt-3">
                 <div class="col text-center">
-                    <p class="mb-0">© 2024 bthakrar. All rights reserved.</p>
+                    <p class="mb-0">© 2025 bthakrar. All rights reserved.</p>
                 </div>
             </div>
         </div>
@@ -188,14 +185,15 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     {% block extra_js %}{% endblock %}
     <script>
+
         // Navbar shrink effect on scroll
-        document.addEventListener("scroll", function () {
-            const navbar = document.querySelector(".navbar");
-            if (window.scrollY > 50) {
-                navbar.classList.add("shrink");
-            } else {
-                navbar.classList.remove("shrink");
-            }
+            document.addEventListener("scroll", function () {
+                const navbar = document.querySelector(".navbar");
+                if (window.scrollY > 50) {
+                    navbar.classList.add("shrink");
+                } else {
+                    navbar.classList.remove("shrink");
+                }
         });
 
         // Smooth scroll for anchor links
@@ -232,6 +230,9 @@
                 this.style.transform = 'translateY(0)';
             });
         });
+
+
+
     </script>
 </body>
 
