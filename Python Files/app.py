@@ -1,16 +1,16 @@
-from flask import Flask, request, render_template, jsonify, redirect, session, abort
-from database import get_db_connection  # Make sure this exists
+from flask import Flask, request, render_template, jsonify, redirect, session
+from database import get_db_connection
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials as GoogleCredentials
 from googleapiclient.discovery import build
 import google.auth.transport.requests
-import os
 import pathlib
+import os
 import requests
 
+from datetime import datetime
+
 app = Flask(__name__, template_folder='D:/University/All Projects/Time Table project/templates')
-# 1. You must set a secret key to use sessions
-import os 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 app.secret_key = "YOUR_SUPER_SECRET_KEY_HERE"
 
@@ -18,9 +18,11 @@ app.secret_key = "YOUR_SUPER_SECRET_KEY_HERE"
 # Google OAuth Setup  #
 #######################
 GOOGLE_CLIENT_SECRETS_FILE = str(pathlib.Path(__file__).parent / "client_secret.json")
-SCOPES = ['https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/calendar', 'openid']
+SCOPES = ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid', 'https://www.googleapis.com/auth/calendar']
+
 
 def credentials_to_dict(credentials):
+    """Helper function to store GoogleCredentials in a dict for session."""
     return {
         'token': credentials.token,
         'refresh_token': credentials.refresh_token,
@@ -30,30 +32,38 @@ def credentials_to_dict(credentials):
         'scopes': credentials.scopes
     }
 
-########################
-# Calendar Integration #
-########################
+
+################################
+#    Calendar Integration      #
+################################
 @app.route('/add_to_calendar', methods=['POST'])
 def add_to_calendar():
-    # Ensure we have events in session
+    """
+    This route is called when the user clicks "Add to Google Calendar" in events.html.
+    It checks if we have events in session and if the user is authorized. 
+    If not authorized, it redirects to /authorize.
+    Otherwise, it calls /insert_events_to_calendar.
+    """
+    # Ensure events exist in session
     if 'all_events' not in session:
         return redirect('/')
 
     # Check credentials
     if 'credentials' not in session:
-        # Not authorized yet; go to /authorize
         return redirect('/authorize')
     else:
-        # Already have credentials; insert the events
         return redirect('/insert_events_to_calendar')
+
 
 @app.route('/authorize')
 def authorize():
+    """
+    Initiates the OAuth flow with Google.
+    """
     flow = Flow.from_client_secrets_file(
         GOOGLE_CLIENT_SECRETS_FILE,
         scopes=SCOPES,
-        # Make sure this redirect_uri is in your Google Cloud Console
-        redirect_uri='http://127.0.0.1:5000/oauth2callback'
+        redirect_uri='http://127.0.0.1:5000/oauth2callback'  # Must match your GCP "Authorized redirect URI"
     )
     authorization_url, state = flow.authorization_url(
         access_type='offline',
@@ -62,9 +72,12 @@ def authorize():
     session['state'] = state
     return redirect(authorization_url)
 
+
 @app.route('/oauth2callback')
 def oauth2callback():
-    state = session.get('state')
+    """
+    Google redirects here after authorization. We fetch the token and store credentials in the session.
+    """
     flow = Flow.from_client_secrets_file(
         GOOGLE_CLIENT_SECRETS_FILE,
         scopes=SCOPES,
@@ -75,17 +88,21 @@ def oauth2callback():
     session['credentials'] = credentials_to_dict(credentials)
     return redirect('/insert_events_to_calendar')
 
+
 @app.route('/insert_events_to_calendar')
 def insert_events_to_calendar():
-    # If not authorized, go back to /authorize
+    """
+    Actually inserts the events from session['all_events'] into the user's Google Calendar.
+    """
+    # Check credentials
     if 'credentials' not in session:
         return redirect('/authorize')
 
-    # If no events, go back home
+    # Check if events are present
     if 'all_events' not in session:
         return redirect('/')
 
-    # Rebuild credentials
+    # Rebuild the GoogleCredentials object
     creds_dict = session['credentials']
     creds = GoogleCredentials(
         token=creds_dict['token'],
@@ -99,51 +116,111 @@ def insert_events_to_calendar():
 
     all_events = session['all_events']
 
-    # For each course and each event, insert into Google Calendar
+    # Insert each event into the user's calendar
     for course_key, course_events in all_events.items():
         for e in course_events:
-            # TODO: Parse your actual start/end times. Here we use placeholders:
-            start_datetime = "2025-01-01T10:00:00"
-            end_datetime   = "2025-01-01T12:00:00"
-            time_zone      = "Asia/Kolkata"
+            # e['event_date'] is assumed to be an ISO date string (e.g. "2024-12-02")
+            # e['time'] is something like "11:30-13:30" (or might be None/empty for no-time events)
 
-            event_body = {
-                'summary': f"{course_key} - {e['event_type']}",
-                'location': e['location'],
-                'description': e['description'],
-                'start': {
-                    'dateTime': start_datetime,
-                    'timeZone': time_zone
-                },
-                'end': {
-                    'dateTime': end_datetime,
-                    'timeZone': time_zone
-                },
-                'reminders': {
-                    'useDefault': False,
-                    'overrides': [
-                        {'method': 'email', 'minutes': 24 * 60},
-                        {'method': 'popup', 'minutes': 10}
-                    ],
-                },
-            }
+            event_date_str = e.get('event_date')
+            time_str = e.get('time')
 
-            service.events().insert(
-                calendarId='primary',
-                body=event_body
-            ).execute()
+            # If there's no date, skip or handle differently
+            if not event_date_str:
+                continue
 
-    # Redirect to home with an optional message
+            # Attempt to parse date
+            try:
+                date_obj = datetime.strptime(event_date_str, "%Y-%m-%d")  # 2024-12-02 -> datetime(2024, 12, 2)
+            except Exception as ex:
+                print("Error parsing date:", ex)
+                continue
+
+            start_iso = None
+            end_iso = None
+            time_zone = "America/Toronto"  # Adjust to your desired time zone
+
+            # If there's a time range (like "11:30-13:30")
+            if time_str and '-' in time_str:
+                start_time_str, end_time_str = time_str.split('-')
+                try:
+                    # Parse "11:30" -> datetime.time(11, 30)
+                    start_time_obj = datetime.strptime(start_time_str.strip(), "%H:%M").time()
+                    end_time_obj   = datetime.strptime(end_time_str.strip(),   "%H:%M").time()
+
+                    start_dt = datetime.combine(date_obj.date(), start_time_obj)  # e.g. 2024-12-02 11:30:00
+                    end_dt   = datetime.combine(date_obj.date(), end_time_obj)    # e.g. 2024-12-02 13:30:00
+
+                    start_iso = start_dt.isoformat()  # "2024-12-02T11:30:00"
+                    end_iso   = end_dt.isoformat()    # "2024-12-02T13:30:00"
+                except Exception as ex:
+                    print("Error parsing time:", ex)
+                    # If time is invalid, maybe skip or create an all-day event
+
+            # If no valid time was provided or parsing failed, you might create an all-day event:
+            if not start_iso or not end_iso:
+                # "All-day" events in Calendar can be set using 'date' instead of 'dateTime'
+                # Or you can default start/end to 00:00–23:59
+                start_iso = date_obj.date().isoformat()  # "2024-12-02"
+                end_iso = date_obj.date().isoformat()    # same day, or next day if you want 1-day event
+
+                event_body = {
+                    'summary': f"{course_key} - {e['event_type']}",
+                    'location': e['location'],
+                    'description': e['description'],
+                    'start': {
+                        'date': start_iso  # For all-day event
+                    },
+                    'end': {
+                        'date': end_iso    # For all-day event
+                    },
+                    'reminders': {
+                        'useDefault': False,
+                        'overrides': [
+                            {'method': 'email', 'minutes': 24 * 60},
+                            {'method': 'popup', 'minutes': 10}
+                        ],
+                    },
+                }
+            else:
+                # We have valid start/end datetimes
+                event_body = {
+                    'summary': f"{course_key} - {e['event_type']}",
+                    'location': e['location'],
+                    'description': e['description'],
+                    'start': {
+                        'dateTime': start_iso,
+                        'timeZone': time_zone
+                    },
+                    'end': {
+                        'dateTime': end_iso,
+                        'timeZone': time_zone
+                    },
+                    'reminders': {
+                        'useDefault': False,
+                        'overrides': [
+                            {'method': 'email', 'minutes': 24 * 60},
+                            {'method': 'popup', 'minutes': 10}
+                        ],
+                    },
+                }
+
+            # Insert into Google Calendar
+            service.events().insert(calendarId='primary', body=event_body).execute()
+
+    # Optionally clear the session or show success
     return redirect('/?added_to_calendar=1')
 
 
-#############################
-#       OTHER ROUTES        #
-#############################
+############################################
+#          OTHER ROUTES / LOGIC            #
+############################################
 
 @app.route('/')
 def show_course_types():
-    """Main landing page to show and search for courses."""
+    """
+    Main landing page to show and search for courses.
+    """
     connection, cursor = get_db_connection()
     cursor.execute("SELECT DISTINCT course_type FROM test_courses ORDER BY course_type ASC")
     course_types = [row[0] for row in cursor.fetchall()]
@@ -153,7 +230,9 @@ def show_course_types():
 
 @app.route('/get_course_codes', methods=['POST'])
 def fetch_course_codes():
-    """AJAX endpoint to fetch course codes based on selected course type."""
+    """
+    AJAX endpoint to fetch course codes based on selected course type.
+    """
     course_type = request.json.get('course_type')
     connection, cursor = get_db_connection()
     cursor.execute("""
@@ -169,12 +248,16 @@ def fetch_course_codes():
 
 @app.route('/about')
 def show_about_page():
-    """Render an About page."""
+    """
+    Render an About page.
+    """
     return render_template('about.html')
 
 @app.route('/get_section_numbers', methods=['POST'])
 def fetch_section_numbers():
-    """AJAX endpoint to fetch section numbers based on course type and code."""
+    """
+    AJAX endpoint to fetch section numbers based on course type and code.
+    """
     course_type = request.json.get('course_type')
     course_code = request.json.get('course_code')
 
@@ -202,7 +285,10 @@ def fetch_section_numbers():
 
 @app.route('/search', methods=['POST'])
 def search_courses():
-    """Fetch events for each chosen course and display the schedule."""
+    """
+    Fetch events for each chosen course and display the schedule.
+    Then store them in session so we can add them to Google Calendar later.
+    """
     all_events = {}
     form_data = request.form
     i = 0
@@ -212,30 +298,36 @@ def search_courses():
         course_code = form_data.get(f'course_code_{i}')
         section_number = form_data.get(f'section_number_{i}')
         
-        # If all three are empty, we've reached the end
         if not any([course_type, course_code, section_number]):
             break
 
-        # If all three exist, fetch the events
         if all([course_type, course_code, section_number]):
             course_events = fetch_course_events(course_type, course_code, section_number)
-            # Merge into the all_events dictionary
             all_events.update(course_events)
         
         i += 1
 
-    # 2. Store all_events in the session
+    # Store the events in session so /add_to_calendar can access them
     session['all_events'] = all_events
-
     return render_template('events.html', events=all_events)
 
 def fetch_course_events(course_type, course_code, section_number):
-    """Helper function to query events for a specific course/section."""
+    """
+    Helper function to query events for a specific course/section.
+    We assume the DB stores dates in 'YYYY-MM-DD' format and times in 'HH:mm-HH:mm'.
+    """
     connection, cursor = get_db_connection()
     try:
         query = """
-            SELECT e.event_type, e.event_date, e.start_date, e.end_date, 
-                   e.days, e.time, e.location, e.description, e.weightage
+            SELECT e.event_type, 
+                   e.event_date,
+                   e.start_date,  
+                   e.end_date,    
+                   e.days,
+                   e.time,        
+                   e.location,
+                   e.description,
+                   e.weightage
             FROM test_course_events e
             JOIN test_courses c ON e.course_id = c.course_id
             WHERE c.course_type = %s 
@@ -249,18 +341,17 @@ def fetch_course_events(course_type, course_code, section_number):
         for row in rows:
             event = {
                 'event_type': row[0],
-                'event_date': row[1],
+                'event_date': str(row[1]) if row[1] else None,  # ensure it's a string like "2024-12-02"
                 'start_date': row[2],
                 'end_date': row[3],
                 'days': row[4],
-                'time': row[5],
+                'time': row[5],      
                 'location': row[6],
                 'description': row[7],
                 'weightage': row[8]
             }
             events.append(event)
         
-        # The dict key: "course_type*course_code*section_number"
         key = f"{course_type}*{course_code}*{section_number}"
         return {key: events}
     except Exception as e:
@@ -269,6 +360,7 @@ def fetch_course_events(course_type, course_code, section_number):
     finally:
         cursor.close()
         connection.close()
+
 
 if __name__ == '__main__':
     app.run(debug=True)

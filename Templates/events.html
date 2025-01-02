@@ -145,7 +145,7 @@
                     {% for event in course_events %}
                     <tr>
                         <td>{{ event.event_type }}</td>
-                        <td>{{ event.event_date.strftime('%B %d, %Y') }}</td>
+                        <td>{{ event.event_date }}</td>
                         <td>{{ event.days }}</td>
                         <td>{{ event.time }}</td>
                         <td>{{ event.location }}</td>
@@ -167,31 +167,6 @@
     </div>
     {% endif %}
 </div>
-
-<form action="/add_to_calendar" method="POST">
-  <a href="/" class="btn btn-back">
-      <i class="fas fa-arrow-left mr-2"></i>Search Another Course
-  </a>
-  <button type="submit" class="btn export-button">
-      <i class="fas fa-calendar-plus mr-2"></i>Add to Google Calendar
-  </button>
-</form>
-<form action="/add_to_calendar" method="POST">
-  <a href="/" class="btn btn-back">
-      <i class="fas fa-arrow-left mr-2"></i>Search Another Course
-  </a>
-  <button type="submit" class="btn export-button">
-      <i class="fas fa-calendar-plus mr-2"></i>Add to Google Calendar
-  </button>
-</form>
-<form action="/add_to_calendar" method="POST">
-  <a href="/" class="btn btn-back">
-      <i class="fas fa-arrow-left mr-2"></i>Search Another Course
-  </a>
-  <button type="submit" class="btn export-button">
-      <i class="fas fa-calendar-plus mr-2"></i>Add to Google Calendar
-  </button>
-</form>
 <form action="/add_to_calendar" method="POST">
     <a href="/" class="btn btn-back">
         <i class="fas fa-arrow-left mr-2"></i>Search Another Course

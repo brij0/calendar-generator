@@ -143,7 +143,6 @@ def create_llm_prompt(course_details, student_details):
             {course_details}
             """
     print(prompt_template.format(course_details=course_details, details = details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
-    print("---------------------------------------------------------")
     return None
     return invoke_language_model(prompt_template.format(course_details=course_details,details=details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
 
