@@ -11,7 +11,7 @@ import requests
 
 from datetime import datetime
 
-app = Flask(__name__, template_folder='D:/University/All Projects/Time Table project/templates')
+app = Flask(__name__, template_folder='D:/University/All Projects/Time Table project/templates',static_folder='D:/University/All Projects/Time Table project/static')
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 app.secret_key = "YOUR_SUPER_SECRET_KEY_HERE"
 

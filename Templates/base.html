@@ -9,9 +9,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <style>
-    
-
-
         :root {
             --primary-color: #4a90e2;
             --secondary-color: #f5f6fa;
@@ -26,8 +23,7 @@
             background: url('/static/Background.jpg') no-repeat center center fixed;
             background-size: cover;
             min-height: 100vh;
-            padding-top: 70px;
-            /* Adjust based on navbar height */
+            padding-top: 80px;
             margin: 0;
         }
 
@@ -37,18 +33,24 @@
             left: 0;
             width: 100%;
             z-index: 1050;
-            /* background-color: #4a90e2; */
-            background: url('/static/Calendar.jpg');
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 1rem 2rem;
+            padding: 0.75rem 1.25rem;
             transition: all 0.3s ease-in-out;
         }
 
         .navbar.shrink {
-            padding: 0.5rem 1rem;
-            background: url('/static/Background.jpg') no-repeat center center fixed;
+            padding: 0.1rem 0.75rem;
+            /* background-image: url('static/Background.jpg') no-repeat center center fixed; */
             box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
+            transition: all 1s ease-in-out;
         }
+
+        .container {
+            padding-top: 0rem;
+            background-image: url('static/Background.jpg') no-repeat center center fixed;
+            margin-top: 0rem;
+        }
+
 
         .navbar-brand {
             font-weight: bold;
@@ -67,15 +69,15 @@
             color: var(--primary-color);
         }
 
+        .navbar.blur {
+        backdrop-filter: blur(5px);
+        background-image: url('static/Background.jpg') no-repeat center center fixed;
+        transition: backdrop-filter 0.5s;
+        }
+
         .header-icons {
             display: flex;
             gap: 1rem;
-        }
-
-
-        .container {
-            padding: 2rem;
-            margin-top: 2rem;
         }
 
         .card {
@@ -92,7 +94,6 @@
         }
 
         .footer {
-            
             padding: 2rem 0;
             margin-top: 4rem;
             box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.1);
@@ -137,10 +138,13 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-            <div class="header-icons">
-                <img src="Avatar.jpg" alt="Avatar">
-                <img src="Avatar.jpg" alt="Avatar">
-                <img src="Avatar.jpg" alt="Avatar">
+            <ul class="navbar-nav mr-auto">
+                <!-- Empty list to push header-icons to the right -->
+            </ul>
+            <div class="header-icons ml-auto">
+                <img src="{{ url_for('static', filename='Avatar.jpg') }}" alt="Avatar" style="border-radius: 50%;">
+                <img src="{{ url_for('static', filename='Avatar2.jpg') }}" alt="Avatar" style="border-radius: 50%;">
+                <img src="{{ url_for('static', filename='Avatar3.jpg') }}" alt="Avatar" style="border-radius: 50%;">
             </div>
         </div>
     </nav>
@@ -187,13 +191,15 @@
     <script>
 
         // Navbar shrink effect on scroll
-            document.addEventListener("scroll", function () {
-                const navbar = document.querySelector(".navbar");
-                if (window.scrollY > 50) {
-                    navbar.classList.add("shrink");
-                } else {
-                    navbar.classList.remove("shrink");
-                }
+        document.addEventListener("scroll", function () {
+            const navbar = document.querySelector(".navbar");
+            if (window.scrollY > 50) {
+                navbar.classList.add("blur");
+                navbar.classList.add("shrink");
+            } else {
+                navbar.classList.remove("shrink");
+                 navbar.classList.remove("blur");
+            }
         });
 
         // Smooth scroll for anchor links
@@ -230,9 +236,10 @@
                 this.style.transform = 'translateY(0)';
             });
         });
-
-
-
+        document.addEventListener("DOMContentLoaded", function () {
+            const navbarHeight = document.querySelector(".navbar").offsetHeight;
+            document.body.style.paddingTop = `${navbarHeight}px`;
+        });
     </script>
 </body>
 
