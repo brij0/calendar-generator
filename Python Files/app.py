@@ -1,3 +1,4 @@
+from re import U
 from flask import Flask, request, render_template, jsonify, redirect, session
 from sqlalchemy import desc
 from database import get_db_connection
@@ -374,6 +375,37 @@ def fetch_course_events(course_type, course_code, section_number):
     finally:
         cursor.close()
         connection.close()
+
+
+
+@app.route('/upload_course_outline', methods=['POST'])
+
+def upload_course_outline():
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    UPLOAD_FOLDER = '../Sample Course Outlines'
+    course_type = request.form.get('course_type')
+    course_code = request.form.get('course_code')
+    file = request.files.get('course_outline')
+
+    if not course_type or not course_code or not file:
+        return jsonify({"error": "Missing fields"}), 400
+
+    # Ensure the upload folder exists
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+    # Save the file with the naming convention
+    filename = f"{course_type}_{course_code}.pdf"
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+    try:
+        if os.path.exists(file_path):
+            return jsonify({"message": "Course already exist please check the dropdown again"}), 200
+        else:
+            print(f"Saving file to: {os.path.abspath(file_path)}")
+            file.save(file_path)
+            return jsonify({"message": "Course outline uploaded successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": f"File saving failed: {str(e)}"}), 500
 
 
 if __name__ == '__main__':

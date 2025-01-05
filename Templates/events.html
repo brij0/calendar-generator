@@ -4,6 +4,13 @@
 
 {% block extra_css %}
 <style>
+  /* General Styles */
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f5f4f0;
+        color: #333;
+    }
+
     .results-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -11,6 +18,7 @@
         margin: -2rem -2rem 2rem -2rem;
         border-radius: 0 0 20px 20px;
         text-align: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
 
     .course-card {
@@ -18,68 +26,47 @@
         border: none;
         border-radius: 15px;
         overflow: hidden;
+        background: white;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease;
     }
 
     .course-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
     }
 
     .course-header {
-        background: var(--primary-color);
+        background: #667eea;
         color: white;
         padding: 1rem;
+        font-size: 1.25rem;
+        font-weight: bold;
         border-radius: 15px 15px 0 0;
-    }
-
-    .section-header {
-        background: var(--secondary-color);
-        padding: 0.5rem 1rem;
-        margin: -1px -1px 1rem -1px;
-        border-bottom: 2px solid #e1e8ed;
     }
 
     .table {
         margin-bottom: 0;
+        background-color: white;
+        border-radius: 0 0 15px 15px;
     }
 
     .table th {
-        background: #f8f9fa;
-        border-top: none;
+        background: #f5f4f0;
         font-weight: 600;
         text-transform: uppercase;
         font-size: 0.85rem;
         color: #495057;
+        border-bottom: 2px solid #e1e8ed;
     }
 
     .table td {
-        vertical-align: middle;
         padding: 1rem;
         border-color: #e1e8ed;
     }
 
-    .event-type {
-        font-weight: 600;
-        color: var(--primary-color);
-    }
-
-    .location {
-        color: #666;
-        font-size: 0.9rem;
-    }
-
-    .times {
-        color: #2c3e50;
-        font-size: 0.9rem;
-    }
-
-    .no-events {
-        background: #f8f9fa;
-        padding: 2rem;
-        text-align: center;
-        border-radius: 10px;
-        color: #666;
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
     }
 
     .action-buttons {
@@ -88,8 +75,8 @@
     }
 
     .btn-back {
-        background: var(--secondary-color);
-        color: var(--text-color);
+        background: #764ba2;
+        color: white;
         border: none;
         padding: 0.75rem 1.5rem;
         border-radius: 10px;
@@ -97,13 +84,13 @@
     }
 
     .btn-back:hover {
-        background: #e1e8ed;
+        background: #5e3b82;
         transform: translateY(-2px);
     }
 
     .export-button {
         margin-left: 1rem;
-        background: var(--accent-color);
+        background: #28a745;
         color: white;
         border: none;
         padding: 0.75rem 1.5rem;
@@ -112,8 +99,17 @@
     }
 
     .export-button:hover {
-        background: #27ae60;
+        background: #218838;
         transform: translateY(-2px);
+    }
+
+    .no-events {
+        background: #f8f9fa;
+        padding: 2rem;
+        text-align: center;
+        border-radius: 10px;
+        color: #666;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
 </style>
 {% endblock %}
@@ -182,7 +178,17 @@
 {% block extra_js %}
 <script>
     $(document).ready(function () {
-        // Button animations
+        // Debounce function for optimized event handling
+        function debounce(func, delay) {
+            let timer;
+            return function (...args) {
+                const context = this;
+                clearTimeout(timer);
+                timer = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        // Button animations on click
         $(".btn").on('click', function () {
             $(this).addClass('animate__animated animate__pulse');
             setTimeout(() => {
@@ -190,23 +196,24 @@
             }, 1000);
         });
 
-        // Scroll animations
-        const courseCards = $('.course-card');
-        $(window).scroll(
-            debounce(function () {
-                courseCards.each(function () {
-                    let cardPosition = $(this).offset().top;
-                    let screenPosition = $(window).scrollTop() + $(window).height();
-
-                    if (screenPosition > cardPosition) {
-                        $(this).addClass('animate__animated animate__fadeInUp');
+        // Scroll animations with IntersectionObserver
+        const courseCards = document.querySelectorAll('.course-card');
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate__animated', 'animate__fadeInUp');
+                        observer.unobserve(entry.target); // Stop observing after animation
                     }
                 });
-            }, 200)
+            },
+            { threshold: 0.2 } // Trigger animation when 20% of the element is visible
         );
 
-        // Hover animations
-        courseCards.hover(
+        courseCards.forEach((card) => observer.observe(card));
+
+        // Hover animations with cleanup
+        $(".course-card").hover(
             function () {
                 $(this).addClass('animate__animated animate__pulse');
             },
@@ -215,24 +222,47 @@
             }
         );
 
-        // Ripple effect
-        $('.btn').on('mousedown', function (e) {
-            let x = e.pageX - $(this).offset().left;
-            let y = e.pageY - $(this).offset().top;
+        // Ripple effect on buttons
+        $(".btn").on('mousedown', function (e) {
+            const ripple = $('<span class="ripple"></span>');
+            const x = e.pageX - $(this).offset().left;
+            const y = e.pageY - $(this).offset().top;
 
-            let ripple = $('<span class="ripple"></span>').css({
-                left: x + 'px',
-                top: y + 'px',
+            ripple.css({
+                left: `${x}px`,
+                top: `${y}px`,
             });
 
             $(this).append(ripple);
 
             setTimeout(() => {
                 ripple.remove();
-            }, 1000);
+            }, 600); // Reduced timeout for a smoother effect
         });
 
-        // Google Calendar Integration
+        // Ripple CSS styles (optional for smoother integration)
+        $("<style>")
+            .prop("type", "text/css")
+            .html(`
+                .ripple {
+                    position: absolute;
+                    width: 100px;
+                    height: 100px;
+                    background: rgba(255, 255, 255, 0.5);
+                    border-radius: 50%;
+                    transform: scale(0);
+                    animation: ripple-animation 0.6s linear;
+                    pointer-events: none;
+                }
+
+                @keyframes ripple-animation {
+                    to {
+                        transform: scale(4);
+                        opacity: 0;
+                    }
+                }
+            `)
+            .appendTo("head");
     });
 </script>
 {% endblock %}

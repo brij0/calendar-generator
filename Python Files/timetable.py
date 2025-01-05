@@ -57,9 +57,9 @@ def extract_and_sanitize_pdf_text(pdf_path):
     # Open the PDF file
     doc = fitz.open(pdf_path)
     text = ""
-
+    
     # Loop through each page to extract the text
-    for page_num in range(doc.page_count - 3):
+    for page_num in range(doc.page_count - 4):
         page = doc.load_page(page_num)
         text += page.get_text("text")  # Extract text from the page
     
@@ -142,8 +142,8 @@ def create_llm_prompt(course_details, student_details):
             Course Outline:
             {course_details}
             """
-    print(prompt_template.format(course_details=course_details, details = details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
-    return None
+    # print(prompt_template.format(course_details=course_details, details = details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
+    # return None
     return invoke_language_model(prompt_template.format(course_details=course_details,details=details, lec_details=lec_details, lab_details=lab_details, final_exam_details=final_exam_details))
 
 # ---------------------------------------------------------
@@ -255,18 +255,18 @@ if __name__ == "__main__":
         # {"course_type": "ENGG", "course_code": "3390", "course_section": "0203"},
         # {"course_type": "ENGG", "course_code": "3390", "course_section": "0204"}
 
-        # {"course_type": "ENGG", "course_code": "3450", "course_section": "0101"},
+        {"course_type": "ENGG", "course_code": "3450", "course_section": "0101"}
         # {"course_type": "ENGG", "course_code": "3450", "course_section": "0102"},
         # {"course_type": "ENGG", "course_code": "3450", "course_section": "0103"},
         # {"course_type": "ENGG", "course_code": "3450", "course_section": "0201"},
-        {"course_type": "ENGG", "course_code": "3450", "course_section": "0202"}
+        # {"course_type": "ENGG", "course_code": "3450", "course_section": "0202"}
         
         # ,{"course_type": "ENGG", "course_code": "3640", "course_section": "0102"},
         # {"course_type": "ENGG", "course_code": "3640", "course_section": "0103"},
         # {"course_type": "ENGG", "course_code": "3700", "course_section": "0101"},
         # {"course_type": "ENGG", "course_code": "3700", "course_section": "0102"},
-        # {"course_type": "ENGG", "course_code": "3700", "course_section": "0103"},
         # {"course_type": "ENGG", "course_code": "4450", "course_section": "0101"},
+        # {"course_type": "ENGG", "course_code": "3700", "course_section": "0103"},
         # {"course_type": "ENGG", "course_code": "4450", "course_section": "0102"},
         # {"course_type": "ENGG", "course_code": "4450", "course_section": "0103"},
         # {"course_type": "HIST", "course_code": "1250", "course_section": "01"},
@@ -281,7 +281,7 @@ if __name__ == "__main__":
         print(events)
         event_list = []
         for event in events:
-            if event != {}:
+            if event != {} and len(event['date']) <15 and len(event['weightage']) < 8:
                 event_list.append(event)
                 print(event)
         batch_insert_events(event_list, student_details['course_id'])

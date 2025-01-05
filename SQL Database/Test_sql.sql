@@ -62,4 +62,4 @@ select * from table_for_seat_availability;
 -- truncate test_course_events;
 
 -- truncate test_course_events;
--- delete from test_course_events where event_id > 131;
+-- delete from test_course_events where event_id > 180;

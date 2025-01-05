@@ -1,7 +1,7 @@
 
 SELECT * FROM courses;
 SELECT * FROM events;
-
+select * from course_events;
 
 use course_details;
 CREATE TABLE courses (
