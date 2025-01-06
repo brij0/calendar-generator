@@ -376,6 +376,30 @@ def fetch_course_events(course_type, course_code, section_number):
         cursor.close()
         connection.close()
 
+@app.route('/submit_suggestion', methods=['POST'])
+def submit_suggestion():
+    data = request.get_json()
+    suggestion = data.get("suggestion")
+
+    if not suggestion:
+        return jsonify({"error": "Suggestion is required"}), 400
+
+    try:
+        # Assuming you have a get_db_connection function
+        connection, cursor = get_db_connection()
+
+        # Correct SQL query with placeholders
+        query = "INSERT INTO suggestions (suggestion) VALUES (%s)"
+        cursor.execute(query, (suggestion,))
+
+        # Commit the transaction and close the connection
+        connection.commit()
+        connection.close()
+
+        print(f"Inserted suggestion: {suggestion}")
+        return jsonify({"message": "Suggestion submitted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
 @app.route('/upload_course_outline', methods=['POST'])
@@ -406,7 +430,6 @@ def upload_course_outline():
             return jsonify({"message": "Course outline uploaded successfully"}), 200
     except Exception as e:
         return jsonify({"error": f"File saving failed: {str(e)}"}), 500
-
 
 if __name__ == '__main__':
     app.run(debug=True)

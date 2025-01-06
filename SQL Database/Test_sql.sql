@@ -53,6 +53,13 @@ CREATE TABLE test_course_events (
     FOREIGN KEY (course_id) REFERENCES test_courses(course_id)
 );
 
+CREATE TABLE suggestions (
+    id INT AUTO_INCREMENT PRIMARY KEY, 
+    suggestion TEXT NOT NULL,          
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+
 select * from test_courses;
 select * from test_events;
 select * from test_course_dropdown;
