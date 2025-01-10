@@ -65,7 +65,7 @@ select * from test_events;
 select * from test_course_dropdown;
 select * from test_course_events;
 select * from table_for_seat_availability;
-
+select * from suggestions;
 -- truncate test_course_events;
 
 -- truncate test_course_events;

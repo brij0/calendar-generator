@@ -1,9 +1,14 @@
 
 SELECT * FROM courses;
+SELECT * FROM courses where course_type = "ENGG" and course_code = 3430;
 SELECT * FROM events;
 select * from course_events;
-
 use course_details;
+
+
+
+
+
 CREATE TABLE courses (
     course_id INT AUTO_INCREMENT PRIMARY KEY,
     section_name VARCHAR(50) NOT NULL,
@@ -45,4 +50,10 @@ CREATE TABLE course_dropdown (
     course_type VARCHAR(20),
     course_code VARCHAR(20),
     section_number VARCHAR(20)
+);
+
+CREATE TABLE suggestions (
+    id INT AUTO_INCREMENT PRIMARY KEY, 
+    suggestion TEXT NOT NULL,          
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

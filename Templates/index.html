@@ -384,8 +384,7 @@
             <div>
                 <label for="course-outline" class="h5">If your course is not in the list, upload the course
                     outline:</label>
-                <input type="file" id="course-outline" name="course_outline" accept=".pdf" class="form-control"
-                    required>
+                <input type="file" id="course-outline" name="course_outline" accept=".pdf" class="form-control">
             </div>
             <div id="additional-fields" style="display: none; margin-top: 1rem;">
                 <div class="row mb-3">
@@ -487,7 +486,7 @@
         );
 
         // Generate course selection rows with enhanced animations
-        $(document).ready(function () {
+               $(document).ready(function () {
             $("#generate-rows").click(function () {
                 const numCourses = parseInt($("#num-courses").val());
                 if (isNaN(numCourses) || numCourses <= 0) {
@@ -526,7 +525,6 @@
                         opacity: 1
                     }, 500);
                 }
-
                 // Show the find schedule button
                 $("#find-schedule-container").fadeIn();
             });
@@ -545,7 +543,7 @@
                     data: JSON.stringify({ course_type: courseType }),
                     success: function (data) {
                         let courseCodeDropdown = $(`select[name="course_code_${row}"]`);
-                        courseCodeDropdown.empty().append('<option value="">Select Course Code</option>');
+                        courseCodeDropdown.empty().append('<option value="">Course Code</option>');
                         data.forEach(code => {
                             courseCodeDropdown.append(`<option value="${code}">${code}</option>`);
                         });
@@ -567,7 +565,7 @@
                     data: JSON.stringify({ course_type: courseType, course_code: courseCode }),
                     success: function (data) {
                         let sectionNumberDropdown = $(`select[name="section_number_${row}"]`);
-                        sectionNumberDropdown.empty().append('<option value="">Select Section Number</option>');
+                        sectionNumberDropdown.empty().append('<option value="">Section </option>');
                         data.forEach(section => {
                             sectionNumberDropdown.append(`<option value="${section}">${section}</option>`);
                         });
@@ -576,8 +574,6 @@
             }
         });
     });
-
-
     // Handles pdf upload and additional fields
     $(document).ready(function () {
         // Handle file input change
@@ -600,11 +596,10 @@
             const fileInput = $("#course-outline")[0];
             const file = fileInput.files[0];
 
-            if (!courseType || !courseCode || !file) {
+            if (!courseType || !courseCode) {
                 alert("Please fill all fields and upload a valid PDF.");
                 return;
             }
-
             const formData = new FormData();
             formData.append("course_type", courseType);
             formData.append("course_code", courseCode);
@@ -654,8 +649,6 @@
             });
         });
     });
-
-
     // Feature preview image switcher
     const options = document.querySelectorAll('.option');
     const previewContainer = document.getElementById('previewContainer');
@@ -687,7 +680,6 @@
             }, 500);
         });
     });
-
     // Suggestion form submission
     $(document).ready(function () {
         $("#suggestion-form").on("submit", function (e) {
@@ -714,6 +706,5 @@
             });
         });
     });
-
 </script>
 {% endblock %}
