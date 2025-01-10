@@ -1,3 +1,4 @@
+from httpx import get
 import mysql.connector
 import os
 from dotenv import load_dotenv
@@ -64,7 +65,7 @@ def insert_cleaned_sections(courses_data):
 
                     # Insert section into database
                     insert_section_query = """
-                        INSERT INTO test_courses (section_name, seats, instructor, course_type, course_code, section_number)
+                        INSERT INTO courses (section_name, seats, instructor, course_type, course_code, section_number)
                         VALUES (%s, %s, %s, %s, %s, %s)
                     """
                     db_cursor.execute(insert_section_query, (section_name_cleaned, seats_info, instructors_list, course_type_cleaned, course_code_cleaned, section_number_cleaned))
@@ -106,7 +107,7 @@ def insert_cleaned_sections(courses_data):
 
                         # Insert event into database
                         insert_event_query = """
-                            INSERT INTO test_events (course_id, event_type, times, location)
+                            INSERT INTO events (course_id, event_type, times, location)
                             VALUES (%s, %s, %s, %s)
                         """
                         db_cursor.execute(insert_event_query, (inserted_course_id, event_type_cleaned, meeting_times, meeting_location_cleaned))
@@ -133,7 +134,7 @@ def batch_insert_events(events_list, course_id):
     """
     db_connection, db_cursor = get_db_connection()
     query = """
-        INSERT INTO test_course_events (
+        INSERT INTO course_events (
             course_id, event_type, event_date, start_date, end_date, days, time, location, description, weightage
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
@@ -146,7 +147,8 @@ def batch_insert_events(events_list, course_id):
             event.get('date'),
             event.get('start_date'),
             event.get('end_date'),
-            ','.join(event.get('days', [])),
+            event.get('days'),
+            # ','.join(event.get('days', [])),
             event.get('time'),
             event.get('location'),
             event.get('description'),
@@ -185,8 +187,8 @@ def get_section_details(school_code, course_code, section_number):
     try:
         query = """
             SELECT c.course_id, e.event_type, e.times, e.location
-            FROM test_events e
-            JOIN test_courses c ON e.course_id = c.course_id
+            FROM events e
+            JOIN courses c ON e.course_id = c.course_id
             WHERE c.section_name = %s
         """
         db_cursor.execute(query, (full_section_code,))

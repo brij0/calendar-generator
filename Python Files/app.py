@@ -5,10 +5,8 @@ from database import get_db_connection
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials as GoogleCredentials
 from googleapiclient.discovery import build
-import google.auth.transport.requests
 import pathlib
 import os
-import requests
 
 from datetime import datetime
 
@@ -33,7 +31,6 @@ def credentials_to_dict(credentials):
         'client_secret': credentials.client_secret,
         'scopes': credentials.scopes
     }
-
 
 ################################
 #    Calendar Integration      #
@@ -121,28 +118,18 @@ def insert_events_to_calendar():
     # Insert each event into the user's calendar
     for course_key, course_events in all_events.items():
         for e in course_events:
-            # e['event_date'] is assumed to be an ISO date string (e.g. "2024-12-02")
-            # e['time'] is something like "11:30-13:30" (or might be None/empty for no-time events)
-
             event_date_str = e.get('event_date')
             time_str = e.get('time')
-
-            # If there's no date, skip or handle differently
             if not event_date_str:
                 continue
-
-            # Attempt to parse date
             try:
                 date_obj = datetime.strptime(event_date_str, "%Y-%m-%d")  # 2024-12-02 -> datetime(2024, 12, 2)
             except Exception as ex:
                 print("Error parsing date:", ex)
                 continue
-
             start_iso = None
             end_iso = None
-            time_zone = "America/Toronto"  # Adjust to your desired time zone
-
-            # If there's a time range (like "11:30-13:30")
+            time_zone = "America/Toronto" 
             if time_str and '-' in time_str:
                 start_time_str, end_time_str = time_str.split('-')
                 try:
@@ -150,19 +137,15 @@ def insert_events_to_calendar():
                     start_time_obj = datetime.strptime(start_time_str.strip(), "%H:%M").time()
                     end_time_obj   = datetime.strptime(end_time_str.strip(),   "%H:%M").time()
 
-                    start_dt = datetime.combine(date_obj.date(), start_time_obj)  # e.g. 2024-12-02 11:30:00
-                    end_dt   = datetime.combine(date_obj.date(), end_time_obj)    # e.g. 2024-12-02 13:30:00
+                    start_dt = datetime.combine(date_obj.date(), start_time_obj)
+                    end_dt   = datetime.combine(date_obj.date(), end_time_obj)
 
-                    start_iso = start_dt.isoformat()  # "2024-12-02T11:30:00"
-                    end_iso   = end_dt.isoformat()    # "2024-12-02T13:30:00"
+                    start_iso = start_dt.isoformat()  
+                    end_iso   = end_dt.isoformat()    
                 except Exception as ex:
                     print("Error parsing time:", ex)
-                    # If time is invalid, maybe skip or create an all-day event
 
-            # If no valid time was provided or parsing failed, you might create an all-day event:
             if not start_iso or not end_iso:
-                # "All-day" events in Calendar can be set using 'date' instead of 'dateTime'
-                # Or you can default start/end to 00:00–23:59
                 start_iso = date_obj.date().isoformat()  # "2024-12-02"
                 end_iso = date_obj.date().isoformat()    # same day, or next day if you want 1-day event
                 if e['weightage'] != None:
@@ -227,7 +210,7 @@ def show_course_types():
     Main landing page to show and search for courses.
     """
     connection, cursor = get_db_connection()
-    cursor.execute("SELECT DISTINCT course_type FROM test_courses ORDER BY course_type ASC")
+    cursor.execute("SELECT DISTINCT course_type FROM courses ORDER BY course_type ASC")
     course_types = [row[0] for row in cursor.fetchall()]
     cursor.close()
     connection.close()
@@ -242,7 +225,7 @@ def fetch_course_codes():
     connection, cursor = get_db_connection()
     cursor.execute("""
         SELECT DISTINCT course_code 
-        FROM test_courses 
+        FROM courses 
         WHERE course_type = %s 
         ORDER BY course_code ASC
     """, (course_type,))
@@ -283,7 +266,7 @@ def fetch_section_numbers():
     try:
         query = """
             SELECT DISTINCT section_number
-            FROM test_courses
+            FROM courses
             WHERE course_type = %s AND course_code = %s
         """
         cursor.execute(query, (course_type, course_code))
@@ -300,10 +283,8 @@ def fetch_section_numbers():
 
 @app.route('/search', methods=['POST'])
 def search_courses():
-    """
-    Fetch events for each chosen course and display the schedule.
-    Then store them in session so we can add them to Google Calendar later.
-    """
+    # Debug: Log the received form data
+    print(request.form)
     all_events = {}
     form_data = request.form
     i = 0
@@ -343,8 +324,8 @@ def fetch_course_events(course_type, course_code, section_number):
                    e.location,
                    e.description,
                    e.weightage
-            FROM test_course_events e
-            JOIN test_courses c ON e.course_id = c.course_id
+            FROM course_events e
+            JOIN courses c ON e.course_id = c.course_id
             WHERE c.course_type = %s 
               AND c.course_code = %s 
               AND c.section_number = %s
