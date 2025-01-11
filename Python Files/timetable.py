@@ -247,8 +247,7 @@ def process_pdfs_to_event_list(pdf_input, student_details):
 
 if __name__ == "__main__":  
     course_listt = [
-            {"course_type": "ENGG", "course_code": "4550", "course_section": "0102"}
-            
+            {"course_type": "MATH", "course_code": "2210", "course_section": "01"}
             ]
     for course in course_listt:
         course_type = course.get("course_type")
@@ -257,9 +256,9 @@ if __name__ == "__main__":
         student_details = get_section_details(course_type, course_code, course_section)
         events = process_pdfs_to_event_list(f"D:/University/All Projects/Time Table project/Sample Course Outlines/{course_type}_{course_code}.pdf", student_details)
         print(events)
-        event_list = []
+        event_list =[]
         for event in events:
             if event != {} and len(event['date']) <15 and len(event['weightage']) < 8:
                 event_list.append(event)
                 print(event)
-        batch_insert_events(event_list, student_details['course_id'])
+        # batch_insert_events(event_list, student_details['course_id'])

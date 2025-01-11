@@ -145,6 +145,10 @@ def scrape_courses(list_of_courses):
     
     return scraped_courses
 if __name__ == '__main__':
-    engg = ["ENGG*4560"]
+    engg = ['ENGG*3130', 'ENGG*3210', 'ENGG*3410', 'ENGG*3490', 'ENGG*4430', 'ENGG*4490', 'ENGG*4510', 'ENGG*4540']
     scraped = scrape_courses(engg)
     insert_cleaned_sections(scraped)
+
+
+
+
