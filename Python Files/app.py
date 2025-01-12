@@ -205,10 +205,16 @@ def insert_events_to_calendar():
 @app.route('/')
 def show_course_types():
     """
-    Main landing page to show and search for courses.
+    Main landing page to show and search for courses that have corresponding events.
     """
     connection, cursor = get_db_connection()
-    cursor.execute("SELECT DISTINCT course_type FROM courses ORDER BY course_type ASC")
+    query = """
+        SELECT DISTINCT c.course_type 
+        FROM courses c
+        INNER JOIN course_events ce ON c.course_id = ce.course_id
+        ORDER BY c.course_type ASC
+    """
+    cursor.execute(query)
     course_types = [row[0] for row in cursor.fetchall()]
     cursor.close()
     connection.close()
@@ -217,20 +223,55 @@ def show_course_types():
 @app.route('/get_course_codes', methods=['POST'])
 def fetch_course_codes():
     """
-    AJAX endpoint to fetch course codes based on selected course type.
+    AJAX endpoint to fetch course codes based on selected course type,
+    but only for courses associated with events in course_events table.
     """
     course_type = request.json.get('course_type')
     connection, cursor = get_db_connection()
     cursor.execute("""
-        SELECT DISTINCT course_code 
-        FROM courses 
-        WHERE course_type = %s 
-        ORDER BY course_code ASC
+        SELECT DISTINCT c.course_code 
+        FROM courses c
+        INNER JOIN course_events ce ON c.course_id = ce.course_id
+        WHERE c.course_type = %s 
+        ORDER BY c.course_code ASC
     """, (course_type,))
     course_codes = [row[0] for row in cursor.fetchall()]
     cursor.close()
     connection.close()
     return jsonify(course_codes)
+
+@app.route('/get_section_numbers', methods=['POST'])
+def fetch_section_numbers():
+    """
+    AJAX endpoint to fetch section numbers based on course type and code,
+    but only for courses associated with events in course_events table.
+    """
+    course_type = request.json.get('course_type')
+    course_code = request.json.get('course_code')
+
+    if not course_type or not course_code:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    connection, cursor = get_db_connection()
+    try:
+        query = """
+            SELECT DISTINCT c.section_number
+            FROM courses c
+            INNER JOIN course_events ce ON c.course_id = ce.course_id
+            WHERE c.course_type = %s AND c.course_code = %s
+            ORDER BY c.section_number ASC
+        """
+        cursor.execute(query, (course_type, course_code))
+        rows = cursor.fetchall()
+
+        section_numbers = [row[0] for row in rows]
+        return jsonify(section_numbers)
+    except Exception as e:
+        print(f"Error fetching section numbers: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+    finally:
+        cursor.close()
+        connection.close()
 
 @app.route('/course_selection')
 def course_selection():
@@ -245,35 +286,7 @@ def upcoming_features():
     return render_template('upcoming_features.html')
 
 
-@app.route('/get_section_numbers', methods=['POST'])
-def fetch_section_numbers():
-    """
-    AJAX endpoint to fetch section numbers based on course type and code.
-    """
-    course_type = request.json.get('course_type')
-    course_code = request.json.get('course_code')
 
-    if not course_type or not course_code:
-        return jsonify({"error": "Missing required fields"}), 400
-
-    connection, cursor = get_db_connection()
-    try:
-        query = """
-            SELECT DISTINCT section_number
-            FROM courses
-            WHERE course_type = %s AND course_code = %s
-        """
-        cursor.execute(query, (course_type, course_code))
-        rows = cursor.fetchall()
-
-        section_numbers = [row[0] for row in rows]
-        return jsonify(section_numbers)
-    except Exception as e:
-        print(f"Error fetching section numbers: {e}")
-        return jsonify({"error": "Internal server error"}), 500
-    finally:
-        cursor.close()
-        connection.close()
 
 @app.route('/search', methods=['POST'])
 def search_courses():
@@ -405,6 +418,11 @@ def upload_course_outline():
             return jsonify({"message": "Course outline uploaded successfully"}), 200
     except Exception as e:
         return jsonify({"error": f"File saving failed: {str(e)}"}), 500
+
+@app.route('/privacy')
+def privacy_policy():
+    return render_template('privacy.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)

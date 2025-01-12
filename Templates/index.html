@@ -81,10 +81,19 @@
         justify-content: center;
         align-items: center;
     }
+    .course-selector:active{
+        background:#f5f4f0 ;
+        color: black;
+    }
 
     .number-input {
         max-width: 300px;
         margin: 1rem auto;
+    }
+    
+    .number-input:active{
+        background:#f5f4f0 ;
+        color: black;
     }
 
     h2.text-center {
@@ -276,7 +285,10 @@
         max-width: 600px;
         margin: 2rem auto;
     }
-
+        #suggestion-text:focus {
+        background:#f5f4f0 ;
+        color: black;
+    }
     .suggestion-box h2 {
         font-size: 1.5rem;
         color: #4169e1;
@@ -350,7 +362,6 @@
     <div class="text-center mb-4">
         <label for="num-courses" class="h5">How many courses are you taking?</label>
         <div class="number-input mx-auto">
-            <!-- Removed 'required' here -->
             <input type="number" id="num-courses" class="form-control" min="1" max="7" placeholder="Number of courses">
         </div>
         <button id="generate-rows" class="btn btn-success mt-3">
@@ -360,14 +371,12 @@
     <form id="course-form" action="/search" method="post">
         <div id="course-rows"></div>
         <div class="text-center" id="find-schedule-container" style="display: none;">
-            <!-- Make sure this is within the form -->
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-search mr-2"></i>Find Schedules
             </button>
             <div id="additional-fields" style="display: none; margin-top: 1rem;">
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <!-- Removed 'required' here -->
                         <select id="course-type-dropdown" name="course_type" class="form-control">
                             <option value="">Select Course Type</option>
                             {% for course_type in course_types %}
@@ -376,7 +385,6 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <!-- Removed 'required' here -->
                         <input type="text" id="course-code-input" name="course_code" class="form-control"
                             placeholder="Enter Course Code">
                     </div>
