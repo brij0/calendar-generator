@@ -1,6 +1,4 @@
-from re import U
 from flask import Flask, request, render_template, jsonify, redirect, session
-from sqlalchemy import desc
 from database import get_db_connection
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials as GoogleCredentials
@@ -233,10 +231,6 @@ def fetch_course_codes():
     cursor.close()
     connection.close()
     return jsonify(course_codes)
-
-@app.route('/')
-def home():
-    return render_template('index.html')
 
 @app.route('/course_selection')
 def course_selection():

@@ -59,7 +59,7 @@ def extract_and_sanitize_pdf_text(pdf_path):
     text = ""
     
     # Loop through each page to extract the text
-    for page_num in range(doc.page_count -3):
+    for page_num in range(doc.page_count-2):
         page = doc.load_page(page_num)
         text += page.get_text("text")  # Extract text from the page
     
@@ -247,7 +247,7 @@ def process_pdfs_to_event_list(pdf_input, student_details):
 
 if __name__ == "__main__":  
     course_listt = [
-            {"course_type": "MATH", "course_code": "2210", "course_section": "01"}
+            {"course_type": "PHYS", "course_code": "1010", "course_section": "0107"}
             ]
     for course in course_listt:
         course_type = course.get("course_type")
@@ -256,7 +256,7 @@ if __name__ == "__main__":
         student_details = get_section_details(course_type, course_code, course_section)
         events = process_pdfs_to_event_list(f"D:/University/All Projects/Time Table project/Sample Course Outlines/{course_type}_{course_code}.pdf", student_details)
         print(events)
-        event_list =[]
+        event_list = []
         for event in events:
             if event != {} and len(event['date']) <15 and len(event['weightage']) < 8:
                 event_list.append(event)

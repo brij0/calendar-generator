@@ -24,7 +24,6 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        /* padding: 6rem 2rem; */
         background: url('/static/Background.jpg') no-repeat center center fixed;
         border-radius: 15px;
         color: black;
@@ -48,10 +47,8 @@
 
     .intro-image {
         flex: 2.5;
-        /* Image takes 75% of the width */
         text-align: left;
     }
-
 
     .intro-image img {
         max-width: 100%;
@@ -62,11 +59,9 @@
 
     .intro-text {
         flex: 1.2;
-        /* Text takes 25% of the width */
         margin-top: 0;
         text-align: left;
     }
-
 
     .intro-text p {
         font-size: 1.2rem;
@@ -97,8 +92,6 @@
         margin-bottom: 2rem;
     }
 
-
-
     /* Dropdown styling */
     .dropdown-row {
         opacity: 0;
@@ -106,7 +99,6 @@
         animation: slideIn 0.5s forwards;
         margin-bottom: 1px;
         background: url('/static/Background.jpg') no-repeat center center fixed;
-        ;
     }
 
     @keyframes slideIn {
@@ -128,15 +120,12 @@
 
     .form-control:focus {
         border-color: var(--primary-color);
-        background: url('/static/Background.jpg') no-repeat center center fixed;
         box-shadow: 0 0 0 0.1rem rgba(74, 144, 226, 0.25);
     }
-
 
     .form-control option {
         text-align: center;
         background: #f5f4f0;
-
     }
 
     .option {
@@ -154,8 +143,7 @@
 
     .btn:hover {
         transform: translateY(-2px);
-        background-color:#365cbf;
-        /* Slightly darker background on hover */
+        background-color: #365cbf;
     }
 
     .btn-success {
@@ -206,21 +194,17 @@
         background: url('/static/Background.jpg') no-repeat center center;
         background-size: cover;
         padding: 1rem;
-        /* border-radius: 1rem; */
-        /* box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); */
         height: 300px;
     }
 
     .preview img {
         width: 100%;
         height: 100%;
-        /* Ensures the image fills the preview container */
         border-radius: 0.5rem;
         position: absolute;
         top: 0;
         left: 0;
         object-fit: cover;
-        /* Ensures the image scales nicely without distortion */
         opacity: 0;
         transition: opacity 0.5s ease, transform 0.5s ease;
     }
@@ -235,7 +219,6 @@
         height: 100%;
         border-radius: 0.5rem;
         object-fit: cover;
-        /* Ensures the video fills the container proportionally */
     }
 
     .options {
@@ -346,7 +329,6 @@
         margin-top: 1rem;
     }
 </style>
-
 {% endblock %}
 
 {% block content %}
@@ -368,8 +350,8 @@
     <div class="text-center mb-4">
         <label for="num-courses" class="h5">How many courses are you taking?</label>
         <div class="number-input mx-auto">
-            <input type="number" id="num-courses" class="form-control" min="1" max="7" placeholder="Number of courses"
-                required>
+            <!-- Removed 'required' here -->
+            <input type="number" id="num-courses" class="form-control" min="1" max="7" placeholder="Number of courses">
         </div>
         <button id="generate-rows" class="btn btn-success mt-3">
             <i class="fas fa-plus-circle mr-2"></i>Generate
@@ -378,18 +360,15 @@
     <form id="course-form" action="/search" method="post">
         <div id="course-rows"></div>
         <div class="text-center" id="find-schedule-container" style="display: none;">
+            <!-- Make sure this is within the form -->
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-search mr-2"></i>Find Schedules
             </button>
-            <div>
-                <label for="course-outline" class="h5">If your course is not in the list, upload the course
-                    outline:</label>
-                <input type="file" id="course-outline" name="course_outline" accept=".pdf" class="form-control">
-            </div>
             <div id="additional-fields" style="display: none; margin-top: 1rem;">
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <select id="course-type-dropdown" name="course_type" class="form-control" required>
+                        <!-- Removed 'required' here -->
+                        <select id="course-type-dropdown" name="course_type" class="form-control">
                             <option value="">Select Course Type</option>
                             {% for course_type in course_types %}
                             <option value="{{ course_type }}">{{ course_type }}</option>
@@ -397,13 +376,11 @@
                         </select>
                     </div>
                     <div class="col-md-6">
+                        <!-- Removed 'required' here -->
                         <input type="text" id="course-code-input" name="course_code" class="form-control"
-                            placeholder="Enter Course Code" required>
+                            placeholder="Enter Course Code">
                     </div>
                 </div>
-                <button id="upload-course-outline" class="btn btn-success">
-                    <i class="fas fa-upload mr-2"></i>Upload Course Outline
-                </button>
             </div>
         </div>
     </form>
@@ -481,56 +458,61 @@
 
         // Button hover effects
         $('.btn').hover(
-            function () { $(this).addClass('animate__animated animate__pulse'); },
-            function () { $(this).removeClass('animate__animated animate__pulse'); }
+            function () {
+                $(this).addClass('animate__animated animate__pulse');
+            },
+            function () {
+                $(this).removeClass('animate__animated animate__pulse');
+            }
         );
 
         // Generate course selection rows with enhanced animations
-               $(document).ready(function () {
-            $("#generate-rows").click(function () {
-                const numCourses = parseInt($("#num-courses").val());
-                if (isNaN(numCourses) || numCourses <= 0) {
-                    alert("Please enter a valid number of courses.");
-                    return;
-                }
+        $("#generate-rows").click(function () {
+            const numCourses = parseInt($("#num-courses").val());
+            if (isNaN(numCourses) || numCourses <= 0) {
+                alert("Please enter a valid number of courses.");
+                return;
+            }
 
-                const courseRows = $("#course-rows");
-                courseRows.empty();
+            const courseRows = $("#course-rows");
+            courseRows.empty();
 
-                for (let i = 0; i < numCourses; i++) {
-                    const rowHtml = `
-                    <div class="row dropdown-row mb-4" style="animation-delay: ${i * 100}ms">
-                        <div class="col-md-4">
-                            <select class="form-control course-type" name="course_type_${i}" required>
-                                <option value="">Course Type</option>
-                                {% for course_type in course_types %}
-                                <option value="{{ course_type }}">{{ course_type }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <select class="form-control course-code" name="course_code_${i}" required>
-                                <option value="">Course Code</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <select class="form-control section-number" name="section_number_${i}" required>
-                                <option value="">Section </option>
-                            </select>
-                        </div>
-                    </div>`;
-                    courseRows.append(rowHtml);
+            for (let i = 0; i < numCourses; i++) {
+                const rowHtml = `
+                <div class="row dropdown-row mb-4" style="animation-delay: ${i * 100}ms">
+                    <div class="col-md-4">
+                        <!-- Removed 'required' -->
+                        <select class="form-control course-type" name="course_type_${i}">
+                            <option value="">Course Type</option>
+                            {% for course_type in course_types %}
+                            <option value="{{ course_type }}">{{ course_type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <!-- Removed 'required' -->
+                        <select class="form-control course-code" name="course_code_${i}">
+                            <option value="">Course Code</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <!-- Removed 'required' -->
+                        <select class="form-control section-number" name="section_number_${i}">
+                            <option value="">Section </option>
+                        </select>
+                    </div>
+                </div>`;
+                courseRows.append(rowHtml);
 
-                    $('.dropdown-row').last().hide().slideDown(500).animate({
-                        opacity: 1
-                    }, 500);
-                }
-                // Show the find schedule button
-                $("#find-schedule-container").fadeIn();
-            });
+                $('.dropdown-row').last().hide().slideDown(500).animate({
+                    opacity: 1
+                }, 500);
+            }
+            // Show the find schedule button
+            $("#find-schedule-container").fadeIn();
         });
 
-        // Rest of the AJAX code remains the same
+        // AJAX to get course codes
         $(document).on("change", ".course-type", function () {
             let row = $(this).closest('.dropdown-row').index();
             let courseType = $(this).val();
@@ -552,6 +534,7 @@
             }
         });
 
+        // AJAX to get section numbers
         $(document).on("change", ".course-code", function () {
             let row = $(this).closest('.dropdown-row').index();
             let courseType = $(`select[name="course_type_${row}"]`).val();
@@ -573,118 +556,43 @@
                 });
             }
         });
-    });
-    // Handles pdf upload and additional fields
-    $(document).ready(function () {
-        // Handle file input change
-        $("#course-outline").on("change", function () {
-            const file = this.files[0];
-            if (file && file.type === "application/pdf") {
-                $("#additional-fields").fadeIn();
-            } else {
-                alert("Please upload a valid PDF file.");
-                $("#additional-fields").fadeOut();
-            }
-        });
 
-        // Handle the upload button click
-        $("#upload-course-outline").on("click", function (e) {
-            e.preventDefault();
-
-            const courseType = $("#course-type-dropdown").val();
-            const courseCode = $("#course-code-input").val();
-            const fileInput = $("#course-outline")[0];
-            const file = fileInput.files[0];
-
-            if (!courseType || !courseCode) {
-                alert("Please fill all fields and upload a valid PDF.");
-                return;
-            }
-            const formData = new FormData();
-            formData.append("course_type", courseType);
-            formData.append("course_code", courseCode);
-            formData.append("course_outline", file);
-
-            // Send the data via AJAX
-            $.ajax({
-                url: "/upload_course_outline",
-                type: "POST",
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function (response) {
-                    if (response.message === "Course already exist please check the dropdown again") {
-                        alert(response.message);
-                    }
-                    else {
-                        alert("Course outline uploaded successfully!");
-                    }
-                    $("#additional-fields").fadeOut();
-                    $("#course-outline").val("");
-                },
-                error: function (xhr, status, error) {
-                    alert("An error occurred while uploading the course outline. Please try again.");
-                }
-            });
-        });
-    });
-    document.addEventListener("DOMContentLoaded", function () {
-        const options = document.querySelectorAll(".feature-option");
-        const demoImage = document.getElementById("demo-image");
-        const demoDescription = document.getElementById("demo-description");
+        // Feature preview image switcher
+        const options = document.querySelectorAll('.option');
+        const previewContainer = document.getElementById('previewContainer');
 
         options.forEach(option => {
-            option.addEventListener("click", function () {
+            option.addEventListener('click', () => {
                 // Remove active class from all options
-                options.forEach(opt => opt.classList.remove("active"));
+                options.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
 
-                // Add active class to the clicked option
-                this.classList.add("active");
+                // Get new image source
+                const newImageSrc = option.dataset.image;
 
-                // Update demo image and description
-                const image = this.getAttribute("data-image");
-                const description = this.getAttribute("data-description");
-                demoImage.src = image;
-                demoDescription.textContent = description;
+                // Create a new image element for smooth transition
+                const newImage = document.createElement('img');
+                newImage.src = newImageSrc;
+                newImage.alt = "Feature preview";
+                newImage.classList.add('active');
+
+                // Append new image and remove the old one after animation
+                const currentImage = previewContainer.querySelector('img.active');
+                previewContainer.appendChild(newImage);
+
+                // Remove the old image after transition
+                setTimeout(() => {
+                    if (currentImage) {
+                        previewContainer.removeChild(currentImage);
+                    }
+                }, 500);
             });
         });
-    });
-    // Feature preview image switcher
-    const options = document.querySelectorAll('.option');
-    const previewContainer = document.getElementById('previewContainer');
 
-    options.forEach(option => {
-        option.addEventListener('click', () => {
-            // Remove active class from all options
-            options.forEach(opt => opt.classList.remove('active'));
-            option.classList.add('active');
-
-            // Get new image source
-            const newImageSrc = option.dataset.image;
-
-            // Create a new image element for smooth transition
-            const newImage = document.createElement('img');
-            newImage.src = newImageSrc;
-            newImage.alt = "Feature preview";
-            newImage.classList.add('active');
-
-            // Append new image and remove the old one after animation
-            const currentImage = previewContainer.querySelector('img.active');
-            previewContainer.appendChild(newImage);
-
-            // Remove the old image after transition
-            setTimeout(() => {
-                if (currentImage) {
-                    previewContainer.removeChild(currentImage);
-                }
-            }, 500);
-        });
-    });
-    // Suggestion form submission
-    $(document).ready(function () {
+        // Suggestion form submission via AJAX
         $("#suggestion-form").on("submit", function (e) {
             e.preventDefault();
-            const suggestion = $("#suggestion-text").val(); // Updated to match the ID in your HTML
+            const suggestion = $("#suggestion-text").val();
 
             if (!suggestion.trim()) {
                 alert("Please enter a valid suggestion.");
@@ -698,7 +606,7 @@
                 data: JSON.stringify({ suggestion: suggestion }),
                 success: function (response) {
                     alert("Thank you for your suggestion!");
-                    $("#suggestion-text").val(""); // Clear the text box
+                    $("#suggestion-text").val("");
                 },
                 error: function (xhr, status, error) {
                     alert("An error occurred: " + error);
